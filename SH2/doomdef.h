@@ -61,6 +61,7 @@ typedef unsigned short inpixel_t;
 int D_vsprintf(char *string, const char *format, int *argptr);
 
 void D_printf (char *str, ...);
+void D_printf2 (char *str, ...);
 
 /*
 ===============================================================================

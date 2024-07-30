@@ -9,9 +9,25 @@ void clear();
 void sleep(int);
 void swapbuffers(void);
 void parInitLineTable(int);
+void initPPalette(void);
+void Delay(int);
+unsigned short ReadCom0(void);
+unsigned short ReadCom2(void);
+void WriteCom1(unsigned short);
+void WriteCom2(unsigned short);
+void WriteCom3(unsigned short);
+void WriteCom4(unsigned short);
+void WriteCom5(unsigned short);
 
 extern int DAT_06000800;
+extern int DAT_06000804;
+extern int DAT_06000814;
+extern volatile int DAT_06001174;
+extern int DAT_06007520;
+extern int DAT_06007528;
+extern int lasttics;
 
+extern byte *playpal;
 extern byte *colormap;
 
 extern byte *framebuffer_p;
@@ -89,6 +105,5 @@ static inline void R_DrawSpan (int ds_y, int ds_x1, int ds_x2, int light, fixed_
 	if (DAT_06000800)
 		R_DrawSpanASM(&info);
 }
-
 
 #endif
