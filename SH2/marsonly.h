@@ -12,12 +12,14 @@ void parInitLineTable(int);
 void initPPalette(void);
 void Delay(int);
 unsigned short ReadCom0(void);
+unsigned short ReadCom1(void);
 unsigned short ReadCom2(void);
 void WriteCom1(unsigned short);
 void WriteCom2(unsigned short);
 void WriteCom3(unsigned short);
 void WriteCom4(unsigned short);
 void WriteCom5(unsigned short);
+void WriteCmd7(unsigned short);
 
 extern int DAT_06000800;
 extern int DAT_06000804;
