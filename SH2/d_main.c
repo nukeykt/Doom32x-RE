@@ -1,6 +1,7 @@
 /* D_main.c  */
  
 #include "doomdef.h" 
+#include "marsonly.h"
  
 unsigned	BT_ATTACK = BT_B;
 unsigned	BT_USE = BT_C;
@@ -41,39 +42,58 @@ void D_memset (void *dest, int val, int count)
 {
 	byte	*p;
 	int		*lp;
+	short	*sp;
+	int v1;
 
-/* round up to nearest word */
 	p = dest;
-	while ((int)p & WORDMASK)
+	v1 = 0;
+	if (((int)p & 1) == 0)
 	{
-		if (--count < 0)
-			return;
-		*p++ = val;
+		v1 = (count & 1) ^ 1;
 	}
+
+	if (v1 == 0)
+	{
+		I_Error("D_memset:  byte access\n");
+		while (1);
+	}
+
+	count >>= 1;
 	
 /* write 32 bytes at a time */
 	lp = (int *)p;
 	val = (val<<24) | (val<<16) | (val<<8) | val;
-	while (count >= 32)
+	while (count >= 16)
 	{
 		lp[0] = lp[1] = lp[2] = lp[3] = lp[4] = lp[5] = lp[6] = lp[7] = val;
 		lp += 8;
-		count -= 32;
+		count -= 16;
 	}
 	
 /* finish up */
-	p = (byte *)lp;
+	sp = (short *)lp;
 	while (count--)
-		*p++ = val;
+		*sp++ = val;
 }
 
 
 void D_memcpy (void *dest, void *src, int count)
 {
-	byte	*d, *s;
+	short	*d, *s;
+	int v1;
+
+	v1 = ((int)dest & 1) == 0 && (count & 1) == 0 && ((int)src & 1) == 0;
+
+	if (v1 == 0)
+	{
+		I_Error("D_memcpy:  byte access\n");
+		while (1);
+	}
+
+	count >>= 1;
 	
-	d = (byte *)dest;
-	s = (byte *)src;
+	d = (short *)dest;
+	s = (short *)src;
 	while (count--)
 		*d++ = *s++;
 }
@@ -176,62 +196,6 @@ void M_AddToBox (fixed_t *box, fixed_t x, fixed_t y)
 		box[BOXTOP] = y;
 }
 
-  
-/*=============================================================================  */
- 
-unsigned LocalToNet (unsigned cmd)
-{
-	int		a,b,c;
-
-	a = cmd & BT_SPEED;
-	b = cmd & BT_ATTACK;
-	c = cmd & BT_USE;
-	
-	cmd &= ~(JP_A|JP_B|JP_C);
-	
-	if (a)
-		cmd |= BT_A;
-	if (b)
-		cmd |= BT_B;
-	if (c)
-		cmd |= BT_C;
-		
-	return cmd;
-}
-
-unsigned NetToLocal (unsigned cmd)
-{
-	int		a,b,c;
-
-	a = cmd & JP_A;
-	b = cmd & JP_B;
-	c = cmd & JP_C;
-	
-	cmd &= ~(JP_A|JP_B|JP_C);
-	
-	if (a)
-		cmd |= BT_SPEED;
-	if (b)
-		cmd |= BT_ATTACK;
-	if (c)
-		cmd |= BT_USE;
-		
-	return cmd;
-}
-
-
-
-unsigned GetDemoCmd (void)
-{
-	unsigned	cmd;
-	
-	cmd = *demo_p++;
-	
-	return NetToLocal (cmd);
-}
- 
-/*=============================================================================  */
- 
 int		ticsinframe;	/* how many tics since last drawer */
 int		ticon;
 int		frameon;
@@ -361,7 +325,7 @@ while (!I_RefreshCompleted ())
 } 
  
 
-
+#if 0
 /*=============================================================================  */
 
 void ClearEEProm (void);
@@ -591,3 +555,4 @@ D_printf ("DM_Main\n");
 
 } 
  
+#endif

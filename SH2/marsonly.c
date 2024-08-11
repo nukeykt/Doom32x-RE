@@ -707,3 +707,246 @@ void FUN_02037128(void)
     }
     DAT_0600083c = 0;
 }
+
+void FUN_02037174(void)
+{
+    Delay(49);
+    while (*DAT_06007540)
+    {
+        Delay(49);
+    }
+    DAT_0600083c = 1;
+    DAT_0600083c = 1;
+    Delay(49);
+    while (*DAT_0600753c == 0)
+    {
+        Delay(49);
+    }
+    DAT_06000834 = 0;
+    DAT_06000834 = 0;
+}
+
+void FUN_020371d8(void)
+{
+    Delay(49);
+    while (*DAT_0600752c)
+    {
+        Delay(49);
+    }
+    DAT_06000838 = 1;
+    DAT_06000838 = 1;
+    Delay(49);
+    while (*DAT_06007538 == 0)
+    {
+        Delay(49);
+    }
+    DAT_06000840 = 0;
+    DAT_06000840 = 0;
+}
+
+void FUN_0203723c(void)
+{
+    Delay(49);
+    while (*DAT_06007538)
+    {
+        Delay(49);
+    }
+    DAT_06000840 = 1;
+    DAT_06000840 = 1;
+    Delay(49);
+    while (*DAT_0600752c == 0)
+    {
+        Delay(49);
+    }
+    DAT_06000838 = 0;
+    DAT_06000838 = 0;
+}
+
+/* TODO */
+void FUN_020372a6(void)
+{
+    byte *src;
+    byte *dst;
+    int i;
+    int j;
+
+    dst = framebuffer_p;
+    src = W_POINTLUMPNUM(W_GetNumForName("ROCKS"));
+    for (i = 0; i < 180; i++)
+    {
+        for (j = 0; j < 320; j++)
+        {
+            if ((unsigned int)(i - 17) < 146 && (unsigned int)(j - 31) < 258)
+                *dst++ = 1;
+            else
+                *dst++ = src[(i & 63) + ((j & 63) << 6)] | 1;
+        }
+    }
+
+    sleep(1);
+    swapbuffers();
+
+    dst = framebuffer_p;
+    for (i = 0; i < 180; i++)
+    {
+        for (j = 0; j < 320; j++)
+        {
+            if ((unsigned int)(i - 17) < 146 && (unsigned int)(j - 31) < 258)
+                *dst++ = src[(i & 63) + ((j & 63) << 6)] | 1;
+            else
+                *dst++ = 1;
+        }
+    }
+}
+
+/* TODO */
+void FUN_020373b2(void)
+{
+    byte *src;
+    byte *src2;
+    int *dst;
+    int i;
+    int j;
+
+    dst = (int*)framebuffer_p;
+    src = W_POINTLUMPNUM(W_GetNumForName("CRATOP2"));
+    src2 = W_POINTLUMPNUM(W_GetNumForName("FLOOR7_1"));
+
+    for (i = 0; i < 224; i++)
+    {
+        for (j = 0; j < 80; j++)
+        {
+            if ((unsigned int)(i - 17) > 190)
+                *dst = *(int*)&src2[((i & 63) << 6) + ((j & 15) << 2)];
+            else if ((unsigned int)(j - 6) < 68)
+                *dst = *(int*)&src[((i & 63) << 6) + ((j & 15) << 2)];
+            else
+                *dst = *(int*)&src2[((i & 63) << 6) + ((j & 15) << 2)];
+
+            *dst |= 0x1010101;
+            dst++;
+        }
+    }
+
+    sleep(1);
+    swapbuffers();
+
+    dst = (int*)framebuffer_p;
+    src = W_POINTLUMPNUM(W_GetNumForName("CRATOP2"));
+    src2 = W_POINTLUMPNUM(W_GetNumForName("FLOOR7_1"));
+
+    for (i = 0; i < 224; i++)
+    {
+        for (j = 0; j < 80; j++)
+        {
+            if ((unsigned int)(i - 17) > 190)
+                *dst = *(int*)&src2[((i & 63) << 6) + ((j & 15) << 2)];
+            else if ((unsigned int)(j - 6) < 68)
+                *dst = *(int*)&src[((i & 63) << 6) + ((j & 15) << 2)];
+            else
+                *dst = *(int*)&src2[((i & 63) << 6) + ((j & 15) << 2)];
+
+            *dst |= 0x1010101;
+            dst++;
+        }
+    }
+}
+
+/* TODO */
+void FUN_02037544(void)
+{
+    byte *src;
+    int o;
+    byte *dst;
+    int i;
+    int j;
+
+    dst = framebuffer_p;
+    src = W_POINTLUMPNUM(W_GetNumForName("FLAT5_2"));
+
+    for (i = 0; i < 224; i++)
+    {
+        for (j = 0; j < 320; j++)
+        {
+            *dst++ = src[(i & 63) + ((j & 63) << 6)] | 1;
+        }
+    }
+
+    sleep(1);
+    swapbuffers();
+
+    dst = framebuffer_p;
+
+    for (i = 0; i < 224; i++)
+    {
+        for (j = 0; j < 320; j++)
+        {
+            *dst++ = src[(i & 63) + ((j & 63) << 6)] | 1;
+        }
+    }
+}
+
+/* TODO */
+void FUN_02037604(void)
+{
+    byte *src;
+    int o;
+    byte *dst;
+    int i;
+    int j;
+
+    dst = framebuffer_p;
+    src = W_POINTLUMPNUM(W_GetNumForName("CRATOP2"));
+
+    for (i = 0; i < 224; i++)
+    {
+        for (j = 0; j < 320; j++)
+        {
+            *dst++ = src[(i & 63) + ((j & 63) << 6)] | 1;
+        }
+    }
+
+    sleep(1);
+    swapbuffers();
+
+    dst = framebuffer_p;
+
+    for (i = 0; i < 224; i++)
+    {
+        for (j = 0; j < 320; j++)
+        {
+            *dst++ = src[(i & 63) + ((j & 63) << 6)] | 1;
+        }
+    }
+}
+
+/* TODO */
+void FUN_020376c4(void)
+{
+    byte *src;
+    byte *src2;
+    int *dst;
+    int i;
+    int j;
+
+    dst = (int*)framebuffer_p;
+    src = W_POINTLUMPNUM(W_GetNumForName("CRATOP2"));
+    src2 = W_POINTLUMPNUM(W_GetNumForName("FLOOR7_1"));
+
+    for (i = 0; i < 200; i++)
+    {
+        for (j = 0; j < 80; j++)
+        {
+            if ((unsigned int)(i - 17) > 190)
+                *dst = *(int*)&src2[((i & 63) << 6) + ((j & 15) << 2)];
+            else if ((unsigned int)(j - 6) < 68)
+                *dst = *(int*)&src[((i & 63) << 6) + ((j & 15) << 2)];
+            else
+                *dst = *(int*)&src2[((i & 63) << 6) + ((j & 15) << 2)];
+
+            *dst |= 0x1010101;
+            dst++;
+        }
+    }
+}
+
