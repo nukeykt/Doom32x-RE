@@ -8,6 +8,7 @@ short clipboundbottom[SCREENWIDTH];
 
 void R_SegLoop(viswall_t *w);
 
+extern byte *DAT_060089c0;
 void R_DrawTexture(drawtex_t *tex, viswall_t *w);
 
 void R_SegCommands(void)
@@ -16,6 +17,7 @@ void R_SegCommands(void)
     viswall_t *w;
     drawtex_t drawtex;
     texture_t *tex;
+    unsigned int x, y;
 
     for (i = 0; i < SCREENWIDTH; i++)
     {
@@ -23,8 +25,9 @@ void R_SegCommands(void)
         clipboundbottom[i] = SCREENHEIGHT;
     }
 
-    for (w = (viswall_t*)0x2400f980; w < lastwallcmd; w++)
+    for (w = viswalls; w < lastwallcmd; w++)
     {
+        DAT_060089c0 = ((255 - w->seglightlevel) >> 3) * 512 + colormap;
         if (w->actionbits & AC_TOPTEXTURE)
         {
             drawtex.topheight = w->t_topheight;
@@ -58,7 +61,7 @@ void R_SegCommands(void)
 
 visplane_t *R_FindPlane(visplane_t *check, fixed_t height, pixel_t *picnum, int lightlevel, int start, int stop)
 {
-    int i;
+    unsigned int i;
     for (; check < lastvisplane; check++)
     {
         if (height == check->height
@@ -103,7 +106,7 @@ void R_SegLoop(viswall_t *w)
 
     scalefrac = w->scalefrac;
     actionbits = w->actionbits;
-    floorplane = ceilingplane = (visplane_t*)0x24013180;
+    floorplane = ceilingplane = visplanes;
 
     for (x = w->start; x <= w->stop; x++)
     {

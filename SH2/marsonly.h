@@ -79,7 +79,7 @@ static inline void R_DrawColumn (int dc_x, int dc_yl, int dc_yh, int light, fixe
 	info.f_e = frac;
 	info.f_12 = fracstep;
 	if (DAT_06000800)
-		R_DrawColumn2(&info);
+		R_DrawColumnASM(&info);
 }
 
 typedef struct
