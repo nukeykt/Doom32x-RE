@@ -8,7 +8,7 @@
 
 int DAT_06000800 = 1;
 
-unsigned short DAT_06000808 = 0;
+int DAT_06000808 = 0;
 
 unsigned short DAT_06000810 = 0;
 

@@ -95,7 +95,6 @@ typedef enum
   sfx_punch, 
   sfx_hoof, 
   sfx_metal, 
-  sfx_itmbk, 
   NUMSFX 
 } sfxenum_t; 
  

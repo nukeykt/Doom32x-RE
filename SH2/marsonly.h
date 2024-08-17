@@ -21,8 +21,17 @@ void WriteCom4(unsigned short);
 void WriteCom5(unsigned short);
 void WriteCmd7(unsigned short);
 
+unsigned short FUN_020366ac(unsigned short* a1);
+void FUN_02037604(void);
+void FUN_02037544(void);
+void FUN_020365e8(unsigned short a1, unsigned short a2, unsigned short a3, unsigned short a4);
+void FUN_020372a6(void);
+void FUN_0204cfe4(void);
+
 extern int DAT_06000800;
 extern int DAT_06000804;
+extern int DAT_06000808;
+extern unsigned short DAT_06000810;
 extern int DAT_06000814;
 extern volatile int DAT_06001174;
 extern int DAT_06007520;

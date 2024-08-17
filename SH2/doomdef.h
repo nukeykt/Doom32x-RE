@@ -109,7 +109,8 @@ typedef enum
 	ga_completed,
 	ga_secretexit,
 	ga_warped,
-	ga_exitdemo
+	ga_exitdemo,
+	ga_6
 } gameaction_t;
 
 

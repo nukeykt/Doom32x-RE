@@ -2,11 +2,25 @@
  
 #include "doomdef.h" 
 #include "marsonly.h"
+
+
+void FUN_020377dc() {};
+void FUN_020377e0() {};
+void FUN_020377e4() {};
+void FUN_020377e8() {};
+void FUN_020377ec() {};
+void FUN_020377f0() {};
+void FUN_020377f4() {};
+void FUN_020377f8() {};
+void FUN_020377fc() {};
+void FUN_02037800() {};
  
 unsigned	BT_ATTACK = BT_B;
 unsigned	BT_USE = BT_C;
 unsigned	BT_STRAFE =	BT_C;
 unsigned	BT_SPEED = BT_A;
+
+int DAT_06001304 = 0;
 
 int			controltype;		/* determine settings for BT_* */
 
@@ -136,7 +150,7 @@ int D_strncasecmp (char *s1, char *s2, int len)
 ===============
 */
 
-unsigned char rndtable[256] = {
+unsigned char rndtable[256] __attribute__((section("const"))) = {
 	0,   8, 109, 220, 222, 241, 149, 107,  75, 248, 254, 140,  16,  66 ,
 	74,  21, 211,  47,  80, 242, 154,  27, 205, 128, 161,  89,  77,  36 ,
 	95, 110,  85,  48, 212, 140, 211, 249,  22,  79, 200,  50,  28, 188 ,
@@ -214,270 +228,92 @@ mobj_t	emptymobj;
 ===============
 */
 
+/* TODO */
 int MiniLoop ( void (*start)(void),  void (*stop)(void)
 		,  int (*ticker)(void), void (*drawer)(void) )
 {
-	int		exit;
+	int exit;
 	int		buttons;
+	int v1;
 		
 /* */
 /* setup (cache graphics, etc) */
 /* */
 	start ();
-	exit = 0;
 	
 	ticon = 0;
 	frameon = 0;
 	
+	M_ClearRandom ();
+
 	gameaction = 0;
-	gamevbls = 0;
+	gamevbls = 4;
+	DAT_06001304 = 4;
 	vblsinframe = 4;
 	
 	ticbuttons[0] = ticbuttons[1] = oldticbuttons[0] = oldticbuttons[1] = 0;
 
 	do
 	{
-/* */
-/* run the tic immediately */
-/* */
-		gamevbls += vblsinframe;
-		exit = ticker ();
-
-/* */
-/* adaptive timing based on previous frame */
-/* */
-		if (demoplayback || demorecording)
-			vblsinframe = 4;
-		else
-		{
-			vblsinframe = lasttics;
-			if (vblsinframe > 8)
-				vblsinframe = 8;
-#if 0
-			else if (vblsinframe < 4)
-				vblsinframe = 4;
-#endif
-		}
-					
-/* */
-/* get buttons for next tic */
-/* */
 		oldticbuttons[0] = ticbuttons[0];
 		oldticbuttons[1] = ticbuttons[1];
-
 		buttons = I_ReadControls ();
 		ticbuttons[consoleplayer] = buttons;
+
 		if (demoplayback)
 		{
-			if (buttons & (BT_A|BT_B|BT_C) )
+			if (DAT_06000808)
 			{
-				exit = ga_exitdemo;
-				break;
+				return ga_exitdemo;
 			}
-			ticbuttons[consoleplayer] = buttons = GetDemoCmd ();
+			ticbuttons[consoleplayer] = buttons = *demo_p++;
+			if (buttons == -1)
+				return ga_6;
 		}
-
-		if (netgame)	/* may also change vblsinframe */
-			ticbuttons[!consoleplayer]
-			= NetToLocal( I_NetTransfer ( LocalToNet (ticbuttons[consoleplayer]) ) );
 
 		if (demorecording)
 			*demo_p++ = buttons;
-		
-		if ((demorecording || demoplayback) && (buttons & BT_PAUSE) )
-			exit = ga_completed;
-			
+
+		if ((demorecording || demoplayback) && (buttons & 0x10000000) != 0)
+			return ga_6;
+
 		if (gameaction == ga_warped)
 		{
-			exit = ga_warped;	/* hack for NeXT level reloading and net error */
+			exit = ga_warped;
 			break;
 		}
 
 		ticon++;
+		exit = ticker ();
 
+		while (!FUN_02036df8())
+		{
+
+		}
 /* */
-/* sync up with the refresh */
+/* adaptive timing based on previous frame */
 /* */
-		while (!I_RefreshCompleted ())
-		;
-		S_UpdateSounds ();
+		vblsinframe = DAT_06000804;
+		if (vblsinframe > 8)
+			vblsinframe = 8;
+
+		gamevbls = ticcount;
 		drawer ();
 
-#if 0
-while (!I_RefreshCompleted ())
-;	/* DEBUG */
-#endif
-
-		while ( DSPRead(&dspfinished) != 0xdef6 )
-		;
+		if (demorecording || demoplayback)
+		{
+			vblsinframe = 4;
+			DAT_06001304 += 4;
+			gamevbls = DAT_06001304;
+		}
 
 	} while (!exit);
 
-
-	while (!I_RefreshCompleted ())
-	;
 	stop ();
-	S_Clear ();
-	
-	players[0].mo = players[1].mo = &emptymobj;	/* for net consistancy checks */
-	
+
 	return exit;
 } 
- 
 
-#if 0
-/*=============================================================================  */
-
-void ClearEEProm (void);
-void DrawSinglePlaque (jagobj_t *pl);
-
-int TIC_Abortable (void)
-{
-	jagobj_t	*pl;
-	
-	if	(ticon >= 8*15)
-		return 1;		/* go on to next demo */
-	
-#ifdef JAGUAR	
-	if (ticbuttons[0] == (BT_OPTION|BT_STAR|BT_HASH) )
-	{	/* reset eeprom memory */
-		void Jag68k_main (void);
-
-		ClearEEProm ();
-		pl = W_CacheLumpName ("defaults", PU_STATIC);	
-		DrawSinglePlaque (pl);
-		Z_Free (pl);
-		S_Clear ();
-		ticcount = 0;
-		while ( (junk = ticcount) < 240)
-		;
-		Jag68k_main ();
-	}
-#endif
-
-	if ( (ticbuttons[0] & BT_A) && !(oldticbuttons[0] & BT_A) )
-		return ga_exitdemo;
-	if ( (ticbuttons[0] & BT_B) && !(oldticbuttons[0] & BT_B) )
-		return ga_exitdemo;
-	if ( (ticbuttons[0] & BT_C) && !(oldticbuttons[0] & BT_C) )
-		return ga_exitdemo;
-	return 0;
-}
-
-
-/*============================================================================= */
-
-jagobj_t	*titlepic;
-
-void START_Title (void)
-{
-	backgroundpic = W_POINTLUMPNUM(W_GetNumForName("M_TITLE"));
-	DoubleBufferSetup ();
-	titlepic = W_CacheLumpName ("title",PU_STATIC);
-	S_StartSong(mus_intro, 0);
-}
-
-void STOP_Title (void)
-{
-	Z_Free (titlepic);
-	S_StopSong();
-}
-
-void DRAW_Title (void)
-{
-	DrawJagobj (titlepic, 0, 0);
-	UpdateBuffer ();
-}
-
-/*============================================================================= */
-
-
-void START_Credits (void)
-{
-	backgroundpic = W_POINTLUMPNUM(W_GetNumForName("M_TITLE"));
-	DoubleBufferSetup ();
-	titlepic = W_CacheLumpName ("credits",PU_STATIC);
-}
-
-void STOP_Credits (void)
-{
-	Z_Free (titlepic);
-}
-
-int TIC_Credits (void)
-{
-	if	(ticon >= 10*15)
-		return 1;		/* go on to next demo */
-		
-	if ( (ticbuttons[0] & BT_A) && !(oldticbuttons[0] & BT_A) )
-		return ga_exitdemo;
-	if ( (ticbuttons[0] & BT_B) && !(oldticbuttons[0] & BT_B) )
-		return ga_exitdemo;
-	if ( (ticbuttons[0] & BT_C) && !(oldticbuttons[0] & BT_C) )
-		return ga_exitdemo;
-	return 0;
-}
-
-void DRAW_Credits (void)
-{
-	DrawJagobj (titlepic, 0, 0);
-	UpdateBuffer ();
-}
-
-/*============================================================================ */
-
-void RunMenu (void);
-
-void RunTitle (void)
-{
-	int		exit;
-	
-	exit = MiniLoop (START_Title, STOP_Title, TIC_Abortable, DRAW_Title);
-	if (exit == ga_exitdemo)
-		RunMenu ();
-}
-
-void RunCredits (void)
-{
-	int		exit;
-	
-	exit = MiniLoop (START_Credits, STOP_Credits, TIC_Credits, DRAW_Credits);
-	if (exit == ga_exitdemo)
-		RunMenu ();
-}
-
-void RunDemo (char *demoname)
-{
-	int	*demo;
-	int	exit;
-		
-	demo = W_CacheLumpName (demoname, PU_STATIC);
-	exit = G_PlayDemoPtr (demo);
-	Z_Free (demo);
-	if (exit == ga_exitdemo)
-		RunMenu ();
-}
-
-
-void RunMenu (void)
-{
-reselect:
-	MiniLoop (M_Start, M_Stop, M_Ticker, M_Drawer);
-	if (starttype != gt_single)
-	{
-		I_NetSetup ();
-		if (starttype == gt_single)
-			goto reselect;		/* aborted net startup */
-	}
-	
-	G_InitNew (startskill, startmap, starttype);
-	G_RunGame ();
-}
-
-/*============================================================================ */
-
-
- 
 /* 
 ============= 
 = 
@@ -487,16 +323,325 @@ reselect:
 */ 
  
 void DM_main (void);
- 
-void testgpu (void);
 
 int			checkit;
 skill_t		startskill = sk_medium;
-int			startmap = 3;
+int			startmap = 1;
 gametype_t	starttype = gt_single;
 
+int demo1[] __attribute__((section("const"))) = {
+         0x2,           0x3,           0x0,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,      0x400000,      0x400000,      0x400000,
+    0x400000,      0x400000,      0x400000,      0x400000,
+    0x400000,           0x0,           0x0,           0x0,
+    0x800000,      0x800000,      0x800000,           0x0,
+         0x0,           0x0,      0x100000,      0x100000,
+    0x100000,      0x500000,      0x500000,      0x500000,
+    0x500000,      0x400000,      0x400000,      0x400000,
+    0x400000,      0x400000,      0x400000,      0x400000,
+    0x400000,      0x400000,      0x400000,      0x400000,
+         0x0,      0x400000,      0x400000,      0x400000,
+  0x20400000,    0x20400000,    0x20000000,      0x800000,
+    0x900000,      0x900000,      0x800000,      0x800000,
+    0x800000,      0x800000,           0x0,           0x0,
+  0x20100000,    0x20500000,    0x20500000,    0x20400000,
+  0x20400000,    0x20400000,    0x20400000,    0x20400000,
+  0x20400000,    0x20400000,    0x20400000,    0x20400000,
+  0x20100000,    0x20100000,    0x20000000,    0x20000000,
+  0x20000000,    0x20400000,    0x20400000,    0x20400000,
+  0x20400000,    0x20400000,    0x20400000,    0x20000000,
+  0x20000000,    0x20100000,    0x20100000,    0x20100000,
+  0x20100000,    0x20100000,    0x20100000,    0x20000000,
+  0x20800000,    0x20800000,    0x20800000,    0x20800000,
+  0x20000000,    0x20000000,    0x20000000,    0x20000000,
+  0x20000000,    0x20800000,    0x20800000,    0x20800000,
+  0x20800000,    0x20800000,    0x20800000,    0x20100000,
+  0x20100000,    0x20100000,    0x20100000,    0x20100000,
+  0x20100000,    0x20100000,    0x20100000,    0x20000000,
+  0x20000000,    0x20200000,    0x20200000,    0x20200000,
+  0x20200000,    0x20200000,    0x20200000,    0x20200000,
+  0x20600000,    0x20400000,    0x20400000,    0x20400000,
+  0x20400000,    0x20400000,    0x20400000,    0x20000000,
+  0x20000000,    0x20000000,    0x20000000,    0x20000000,
+    0x100000,      0x500000,      0x500000,      0x402000,
+      0x2000,        0x2000,           0x0,      0x400000,
+    0x400000,      0x400000,      0x400000,      0x400000,
+    0x500000,      0x100000,      0x100000,      0x100000,
+    0x500000,      0x500000,      0x500000,      0x400000,
+    0x400000,      0x400000,      0x400000,           0x0,
+         0x0,     0x2000000,      0x800000,     0x2800000,
+   0x2800000,           0x0,           0x0,     0x2000000,
+   0x2000000,      0x800000,     0x2800000,     0x2000000,
+         0x0,     0x2000000,           0x0,     0x2000000,
+         0x0,     0x2000000,     0x2000000,           0x0,
+   0x2000000,     0x2000000,     0x2800000,           0x0,
+   0x2000000,     0x2000000,           0x0,     0x2000000,
+   0x2400000,           0x0,     0x2000000,     0x2000000,
+   0x2000000,     0x2000000,           0x0,     0x2000000,
+         0x0,     0x2000000,           0x0,     0x2000000,
+   0x2000000,           0x0,     0x2000000,           0x0,
+   0x2000000,     0x2000000,      0x400000,    0x20400000,
+  0x20400000,    0x20400000,    0x20400000,    0x20400000,
+         0x0,           0x0,      0x100000,      0x500000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x900000,      0x800000,      0x800000,      0x800000,
+    0x800000,      0x800000,      0x800000,      0x800000,
+    0x800000,      0x800000,      0x800000,      0x800000,
+   0x2000000,     0x2000000,           0x0,           0x0,
+   0x2000000,           0x0,     0x2000000,     0x2000000,
+         0x0,     0x2000000,      0x800000,     0x2800000,
+   0x2800000,     0x2800000,      0x800000,      0x800000,
+    0x800000,      0x800000,     0x2000000,     0x2000000,
+   0x2000000,     0x2500000,      0x400000,     0x2400000,
+   0x2000000,           0x0,     0x2000000,           0x0,
+   0x2000000,     0x2000000,           0x0,     0x2000000,
+   0x2000000,     0x2000000,     0x2000000,           0x0,
+   0x2000000,     0x2000000,     0x2400000,      0x400000,
+    0x400000,      0x400000,      0x400000,      0x400000,
+   0x2000000,           0x0,     0x2000000,     0x2000000,
+   0x2000000,     0x2000000,           0x0,     0x2100000,
+    0x500000,    0x20500000,    0x20500000,    0x20500000,
+  0x20500000,    0x20500000,    0x20100000,    0x20100000,
+  0x20100000,    0x20100000,      0x800000,      0x800000,
+    0x800000,      0x800000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x900000,      0x900000,      0x900000,
+    0x900000,      0x900000,      0x800000,      0x800000,
+    0x800000,      0x900000,      0x900000,      0x800000,
+    0x800000,      0x800000,      0x100000,           0x0,
+         0x0,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x900000,      0x900000,
+    0x900000,      0x900000,      0x900000,      0x900000,
+    0x100000,           0x0,      0x400000,      0x400000,
+    0x400000,      0x400000,      0x400000,      0x400000,
+    0x400000,      0x400000,      0x400000,      0x400000,
+         0x0,           0x0,           0x0,      0x400000,
+    0x400000,      0x400000,      0x400000,      0x400000,
+    0x400000,      0x400000,      0x400000,      0x500000,
+    0x500000,      0x500000,      0x500000,      0x500000,
+    0x500000,      0x500000,      0x500000,      0x500000,
+    0x100000,      0x900000,      0x800000,      0x900000,
+    0x800000,      0x800000,      0x800000,      0x800000,
+    0x800000,      0x800000,      0x800000,      0x800000,
+    0x100000,      0x400000,      0x400000,      0x400000,
+    0x400000,      0x400000,      0x400000,      0x400000,
+    0x400000,      0x400000,      0x400000,      0x400000,
+    0x400000,      0x400000,      0x400000,      0x400000,
+    0x500000,      0x500000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x500000,
+    0x500000,      0x500000,      0x500000,      0x500000,
+    0x500000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x500000,      0x500000,      0x500000,
+    0x500000,      0x500000,      0x500000,      0x500000,
+    0x500000,      0x500000,      0x500000,      0x100000,
+    0x100000,      0x500000,      0x500000,      0x500000,
+    0x100000,      0x500000,      0x400000,      0x400000,
+    0x400000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x900000,      0x900000,      0x900000,      0x900000,
+    0x900000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x500000,      0x500000,      0x500000,
+    0x500000,      0x500000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x500000,
+    0x500000,      0x500000,      0x500000,      0x500000,
+    0x500000,      0x500000,      0x500000,      0x500000,
+    0x500000,           0x0,           0x0,           0x0,
+         0x0,           0x0,           0x0,      0x100000,
+    0x400000,      0x400000,      0x400000,      0x400000,
+    0x400000,     0x2000000,     0x2000000,     0x2000000,
+   0x2000000,     0x2000000,           0x0,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,           0x0,      0x800000,      0x800000,
+         0x0,     0x2000000,     0x2000000,     0x2000000,
+   0x2000000,     0x2000000,     0x2000000,           0x0,
+         0x0,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,           0x0,           0x0,      0x400000,
+         0x0,           0x0,     0x2000000,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,           0x0,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x200000,      0x200000,
+    0x200000,      0x200000,      0x200000,      0x200000,
+    0x200000,      0x200000,      0x200000,      0x600000,
+    0x600000,      0x600000,      0x600000,      0x600000,
+    0x600000,      0x600000,      0x400000,      0x400000,
+    0x400000,      0x400000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x900000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x900000,
+    0x800000,      0x800000,      0x800000,      0x800000,
+    0x100000,      0x100000,      0x800000,      0x800000,
+    0x800000,      0x100000,      0x800000,      0x800000,
+    0x800000,      0x800000,           0x0,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+    0x200000,      0x600000,      0x600000,      0x600000,
+    0x400000,      0x400000,      0x400000,      0x400000,
+    0x400000,      0x400000,      0x500000,      0x100000,
+    0x100000,      0x100000,    0x20100000,    0x20900000,
+  0x20900000,    0x20900000,    0x20900000,    0x20900000,
+  0x20100000,    0x20100000,    0x20100000,    0x20100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x900000,      0x800000,      0x800000,
+    0x800000,      0x800000,      0x800000,      0x800000,
+    0x800000,      0x800000,      0x800000,      0x900000,
+    0x900000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x500000,      0x500000,      0x500000,      0x500000,
+    0x500000,      0x500000,      0x500000,      0x500000,
+    0x500000,      0x500000,      0x100000,      0x100000,
+    0x100000,      0x102000,      0x102000,        0x2000,
+      0x2000,           0x0,           0x0,      0x100000,
+    0x100000,      0x900000,      0x900000,      0x900000,
+    0x100000,      0x500000,      0x500000,      0x500000,
+    0x500000,     0x2500000,     0x2400000,     0x2400000,
+   0x2000000,     0x2000000,           0x0,           0x0,
+   0x2000000,     0x2000000,           0x0,      0x800000,
+    0x800000,      0x900000,      0x900000,      0x900000,
+    0x900000,      0x900000,      0x900000,      0x900000,
+    0x900000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x900000,      0x900000,
+    0x800000,      0x800000,      0x800000,      0x800000,
+    0x800000,      0x800000,      0x800000,      0x800000,
+    0x800000,      0x800000,           0x0,           0x0,
+    0x400000,      0x400000,           0x0,     0x2000000,
+   0x2000000,     0x2000000,     0x2000000,     0x2000000,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,           0x0,      0x900000,      0x900000,
+    0x902000,      0x902000,      0x902000,      0x902000,
+    0x902000,      0x902000,      0x902000,      0x902000,
+    0x902000,           0x0,      0x400000,      0x400000,
+    0x400000,      0x400000,      0x400000,      0x400000,
+    0x400000,      0x400000,      0x400000,      0x400000,
+    0x400000,      0x400000,      0x400000,      0x400000,
+    0x400000,      0x400000,     0x2000000,     0x2000000,
+   0x2000000,     0x2000000,           0x0,           0x0,
+    0x400000,      0x400000,           0x0,           0x0,
+         0x0,     0x2000000,     0x2000000,     0x2000000,
+   0x2000000,     0x2000000,     0x2000000,     0x2000000,
+   0x2000000,           0x0,     0x2000000,     0x2000000,
+    0x400000,      0x400000,     0x2000000,     0x2000000,
+    0x800000,      0x800000,      0x800000,      0x800000,
+    0x800000,      0x800000,      0x800000,      0x800000,
+   0x2000000,     0x2000000,     0x2000000,     0x2000000,
+   0x2000000,     0x2800000,     0x2800000,           0x0,
+         0x0,      0x100000,    0x20100000,    0x20100000,
+  0x20900000,    0x20900000,    0x20900000,    0x20900000,
+  0x20900000,    0x20900000,    0x20100000,    0x20100000,
+  0x20100000,    0x20500000,    0x20500000,    0x20500000,
+  0x20100000,    0x20100000,    0x20100000,    0x20500000,
+  0x20500000,    0x20500000,    0x20100000,    0x20100000,
+  0x20100000,    0x20100000,    0x20100000,    0x20100000,
+  0x20100000,    0x20100000,    0x20100000,    0x20100000,
+  0x20100000,    0x20100000,    0x20100000,    0x20100000,
+  0x20100000,    0x20100000,    0x20100000,    0x20100000,
+  0x20100000,    0x20100000,    0x20000000,    0x20000000,
+  0x20800000,      0x800000,      0x900000,      0x900000,
+    0x100000,      0x100000,        0x2000,        0x2000,
+      0x2000,        0x2000,           0x0,           0x0,
+    0x400000,      0x400000,      0x400000,      0x500000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+   0x2000000,     0x2000000,     0x2000000,     0x2000000,
+   0x2400000,     0x2400000,     0x2400000,      0x400000,
+         0x0,     0x2000000,     0x2000000,     0x2000000,
+   0x2000000,     0x2000000,     0x2000000,     0x2800000,
+   0x2800000,     0x2800000,     0x2800000,     0x2800000,
+   0x2800000,     0x2800000,           0x0,           0x0,
+         0x0,           0x0,      0x100000,      0x100000,
+    0x100000,      0x100000,    0x20100000,    0x20000000,
+         0x0,      0x800000,     0x2800000,     0x2800000,
+   0x2800000,     0x2000000,           0x0,           0x0,
+         0x0,      0x400000,      0x400000,      0x400000,
+    0x400000,           0x0,      0x100000,      0x100000,
+    0x100000,      0x500000,      0x400000,      0x400000,
+    0x400000,      0x400000,      0x400000,      0x400000,
+    0x400000,      0x100000,      0x800000,     0x2800000,
+   0x2800000,     0x2000000,     0x2000000,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,           0x0,           0x0,      0x800000,
+    0x900000,      0x900000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,     0x2100000,
+   0x2100000,     0x2100000,     0x2100000,     0x2100000,
+   0x2100000,     0x2100000,           0x0,           0x0,
+         0x0,           0x0,           0x0,      0x100000,
+    0x500000,      0x400000,      0x400000,      0x400000,
+    0x400000,     0x2400000,     0x2400000,     0x2000000,
+   0x2000000,     0x2000000,     0x2000000,     0x2000000,
+   0x2800000,     0x2800000,      0x800000,      0x800000,
+   0x2800000,     0x2800000,     0x2000000,     0x2000000,
+   0x2000000,     0x2000000,     0x2000000,     0x2000000,
+   0x2000000,     0x2000000,     0x2000000,     0x2100000,
+   0x2100000,     0x2100000,     0x2100000,      0x100000,
+    0x100000,      0x100000,      0x900000,      0x800000,
+    0x800000,      0x800000,      0x800000,      0x800000,
+    0x100000,      0x100000,      0x100000,      0x500000,
+    0x500000,      0x500000,      0x500000,      0x500000,
+    0x500000,      0x100000,      0x900000,      0x800000,
+    0x800000,      0x800000,      0x800000,      0x800000,
+    0x800000,      0x800000,      0x800000,      0x800000,
+    0x900000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x900000,      0x900000,      0x900000,      0x900000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x100000,      0x100000,      0x100000,      0x100000,
+    0x900000,      0x800000,      0x800000,      0x800000,
+    0x800000,      0x800000,      0x800000,      0x800000,
+    0x800000,      0x800000,      0x800000,      0x800000,
+    0x800000,      0x800000,           0x0,           0x0,
+   0x2000000,     0x2400000,      0x400000,      0x400000,
+    0x400000,      0x400000,      0x400000,      0x400000,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+         0x0,           0x0,           0x0,           0x0,
+         -1,-1,-1,-1
+};
+
+/* TODO */
 void D_DoomMain (void) 
 {    
+	unsigned short v1;
+	unsigned short v2;
 D_printf ("C_Init\n");
 	C_Init ();		/* set up object list / etc	  */
 D_printf ("Z_Init\n");
@@ -509,50 +654,52 @@ D_printf ("R_Init\n");
 	R_Init (); 
 D_printf ("P_Init\n");
 	P_Init (); 
-#ifndef MARS
 D_printf ("S_Init\n");
 	S_Init ();
-	ST_Init ();
-	O_Init ();
-#endif
 
 /*========================================================================== */
 
 D_printf ("DM_Main\n");
 
-/*	while (1)	RunDemo ("DEMO1"); */
+	DAT_06000810 = 1;
 
-/*G_RecordDemo ();	// set startmap and startskill */
+	v2 = FUN_020366ac(&v1);
 
-/*	MiniLoop (F_Start, F_Stop, F_Ticker, F_Drawer); */
-
-/*G_InitNew (startskill, startmap, gt_deathmatch); */
-/*G_RunGame (); */
-
-#ifdef NeXT
-	if (M_CheckParm ("-dm") )
+	while (v2 != 0xdeaf)
 	{
-		I_NetSetup ();
-		G_InitNew (startskill, startmap, gt_deathmatch);
-	}
-	else if (M_CheckParm ("-dial") || M_CheckParm ("-answer") )
-	{
-		I_NetSetup ();
-		G_InitNew (startskill, startmap, gt_coop);
-	}
-	else
-		G_InitNew (startskill, startmap, gt_single);
-	G_RunGame ();
-#endif
-
-	while (1)
-	{
-		RunTitle ();
-		RunDemo ("DEMO1");
-		RunCredits ();
-		RunDemo ("DEMO2");
+		Delay(50);
+		v2 = FUN_020366ac(&v1);
 	}
 
+	FUN_0204cfe4();
+	FUN_02037604();
+
+	while (!DAT_06000808)
+	{
+		G_PlayDemoPtr(demo1);
+	}
+
+	v2 = FUN_020366ac(&v1);
+
+	while (v2 != 0xd559)
+	{
+		Delay(50);
+		v2 = FUN_020366ac(&v1);
+	}
+	startmap = v2 & 255;
+
+	if (startmap != 1)
+		cheated = true;
+
+	startskill = (v2 >> 8) & 15;
+
+    if (v2 & 0x8000)
+        DAT_06000810 = 1;
+    else
+        DAT_06000810 = 0;
+
+	G_InitNew(startskill, startmap, gt_single);
+
+	G_RunGame();
 } 
  
-#endif

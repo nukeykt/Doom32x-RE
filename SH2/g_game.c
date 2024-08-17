@@ -2,6 +2,7 @@
  
 #include "doomdef.h" 
 #include "p_local.h" 
+#include "marsonly.h"
  
 void G_PlayerReborn (int player); 
  
@@ -50,7 +51,7 @@ void G_DoLoadLevel (void)
 	{ 
 		if (playeringame[i] && players[i].playerstate == PST_DEAD) 
 			players[i].playerstate = PST_REBORN; 
-		players[i].frags = 0;
+		D_memset(&players[i].frags, 0, 8);
 	} 
 
 /*  */
@@ -66,6 +67,7 @@ void G_DoLoadLevel (void)
  	skytexturep = &textures[skytexture];
 		 
 	P_SetupLevel (gamemap, gameskill);   
+	FUN_020372a6();
 	displayplayer = consoleplayer;		/* view the guy you are playing     */
 	gameaction = ga_nothing; 
 
@@ -182,40 +184,6 @@ boolean G_CheckSpot (int playernum, mapthing_t *mthing)
 /* 
 ==================== 
 = 
-= G_DeathMatchSpawnPlayer 
-= 
-= Spawns a player at one of the random death match spots 
-= called at level load and each death 
-==================== 
-*/ 
- 
-void G_DeathMatchSpawnPlayer (int playernum) 
-{ 
-	int             i,j; 
-	int				selections;
-	
-	selections = deathmatch_p - deathmatchstarts;
-	if (selections < 4)
-		I_Error ("Only %i deathmatch spots, 4 required", selections);
-		
-	for (j=0 ; j<20 ; j++) 
-	{ 
-		i = P_Random()%selections;
-		if (G_CheckSpot (playernum, &deathmatchstarts[i]) ) 
-		{ 
-			deathmatchstarts[i].type = playernum+1; 
-			P_SpawnPlayer (&deathmatchstarts[i]); 
-			return; 
-		} 
-	} 
- 
-/* no good spot, so the player will probably get stuck  */
-	P_SpawnPlayer (&playerstarts[playernum]); 
-} 
- 
-/* 
-==================== 
-= 
 = G_DoReborn 
 = 
 ==================== 
@@ -235,13 +203,6 @@ void G_DoReborn (int playernum)
 /* respawn this player while the other players keep going */
 /* */
 	players[playernum].mo->player = NULL;   /* dissasociate the corpse  */
-		
-	/* spawn at random spot if in death match  */
-	if (netgame == gt_deathmatch) 
-	{ 
-		G_DeathMatchSpawnPlayer (playernum); 
-		return; 
-	} 
 		
 	if (G_CheckSpot (playernum, &playerstarts[playernum]) ) 
 	{ 
@@ -300,17 +261,11 @@ D_printf ("G_InitNew\n");
 
 	M_ClearRandom (); 
 
-/* these may be reset by I_NetSetup */
-	gamemap = map; 
-	gameskill = skill; 
- 	netgame = gametype;
-	I_DrawSbar ();			/* draw frag boxes if multiplayer */
-
 /* force players to be initialized upon first level load          */
 	for (i=0 ; i<MAXPLAYERS ; i++) 
 		players[i].playerstate = PST_REBORN; 
 
-	players[0].mo = players[1].mo = &emptymobj;	/* for net consistancy checks */
+	netgame = gametype;
  	
 	playeringame[0] = true;	
 	if (netgame != gt_single)
@@ -320,7 +275,9 @@ D_printf ("G_InitNew\n");
 
 	demorecording = false;
 	demoplayback = false;
-	
+
+	gamemap = map;
+	gameskill = skill;
 
 	gametic = 0; 
 
@@ -361,6 +318,7 @@ D_printf ("G_InitNew\n");
 =================
 */
 
+/* TODO */
 void G_RunGame (void)
 {
 	int		i;
@@ -388,12 +346,18 @@ void G_RunGame (void)
 	/* decide which level to go to next */
 #ifdef MARS
 		if (gameaction == ga_secretexit)
-			nextmap = 24;
+		{
+			if (cheated)
+				nextmap = 4;
+			else
+				nextmap = 24;
+		}
 		else
 		{
 			switch (gamemap)
 			{
-			case 15: nextmap = 23; break;
+			case 15: if (cheated) nextmap = 25; else nextmap = 23; break;
+			case 23: nextmap = 25; break;
 			case 24: nextmap = 4; break;
 			default: nextmap = gamemap+1; break;
 			}
@@ -424,11 +388,38 @@ void G_RunGame (void)
 #endif
 
 	/* run a stats intermission */
-		MiniLoop (IN_Start, IN_Stop, IN_Ticker, IN_Drawer);
+		{
+			unsigned short killpercent = (players[0].killcount * 100) / totalkills;
+			unsigned short itempercent = (players[0].itemcount * 100) / totalitems;
+			unsigned short secretpercent = (players[0].secretcount * 100) / totalsecret;
+			unsigned short v1;
+			unsigned short v2;
+			unsigned short v3;
+			if (nextmap < 16)
+				v1 = nextmap;
+			else
+				v1 = nextmap - 7;
+
+			FUN_02037544();
+
+			FUN_020365e8(0x53e7, (killpercent << 8) | itempercent, secretpercent, v1);
+
+			v2 = FUN_020366ac(&v3);
+			while (v2 != 0xfabd)
+			{
+				Delay(50);
+				v2 = FUN_020366ac(&v3);
+			}
+		}
 	
 	/* run the finale if needed */
 		if (gamemap == 23)
 			MiniLoop (F_Start, F_Stop, F_Ticker, F_Drawer);
+
+		if (gamemap == 15 && cheated)
+		{
+			while (1) {};
+		}
 			
 		gamemap = nextmap;
 	}
@@ -466,7 +457,7 @@ int G_PlayDemoPtr (int *demo)
 
 void G_RecordDemo (void)
 {
-	demo_p = demobuffer = Z_Malloc (0x8000, PU_STATIC, NULL);
+	demo_p = demobuffer = (int*)0x6040000;
 	
 	*demo_p++ = startskill;
 	*demo_p++ = startmap;
