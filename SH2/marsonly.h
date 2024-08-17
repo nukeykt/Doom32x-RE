@@ -38,6 +38,10 @@ extern volatile int DAT_06001174;
 extern int DAT_06007520;
 extern int DAT_06007528;
 extern int lasttics;
+extern int DAT_060010e0;
+extern int DAT_060010ec;
+extern int DAT_060010f0;
+extern int DAT_060010f4;
 
 extern byte *playpal;
 extern byte *colormap;
