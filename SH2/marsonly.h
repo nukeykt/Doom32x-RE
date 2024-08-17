@@ -25,6 +25,7 @@ unsigned short FUN_020366ac(unsigned short* a1);
 void FUN_02037604(void);
 void FUN_02037544(void);
 void FUN_020365e8(unsigned short a1, unsigned short a2, unsigned short a3, unsigned short a4);
+void FUN_02037058(void);
 void FUN_020372a6(void);
 void FUN_0204cfe4(void);
 

@@ -2,23 +2,24 @@
 
 #include "doomdef.h"
 #include "r_local.h"
+#include "marsonly.h"
 
 /*===================================== */
 
 /* */
 /* subsectors */
 /* */
-subsector_t		*vissubsectors[MAXVISSSEC], **lastvissubsector;
+subsector_t		**lastvissubsector;
 
 /* */
 /* walls */
 /* */
-viswall_t	viswalls[MAXWALLCMDS], *lastwallcmd;
+viswall_t	*lastwallcmd;
 
 /* */
 /* planes */
 /* */
-visplane_t	visplanes[MAXVISPLANES], *lastvisplane;
+visplane_t	*lastvisplane;
 
 /* */
 /* sprites */
@@ -300,12 +301,11 @@ void R_Setup (void)
 {
 	int		damagecount, bonuscount;
 	player_t *player;
-	int		shadex, shadey, shadei;
 	
 /* */
 /* set up globals for new frame */
 /* */
-	workingscreen = screens[workpage];
+	workingscreen = (pixel_t*)framebuffer_p;
 
 #ifdef JAGUAR	
 	*(pixel_t  **)0xf02224 = workingscreen;	/* a2 base pointer */
@@ -328,69 +328,48 @@ void R_Setup (void)
 	extralight = player->extralight << 6;
 	fixedcolormap = player->fixedcolormap;
 		
-/* */
-/* calc shadepixel */
-/* */
 	player = &players[consoleplayer];
 
 	damagecount = player->damagecount;
 	bonuscount = player->bonuscount;
-	
+
+	if (bonuscount > 4)
+		bonuscount = 4;
 	if (damagecount)
-		damagecount += 10;
-	if (bonuscount)
-		bonuscount += 2;
-	damagecount >>= 2;
-	shadex = (bonuscount>>1) + damagecount;
-	shadey = (bonuscount>>1) - damagecount;
-	shadei = (bonuscount + damagecount)<<2;
-
-	shadei += player->extralight<<3;
-
-/* */
-/* pwerups */
-/* */
-	if (player->powers[pw_invulnerability] > 60
-	|| (player->powers[pw_invulnerability]&4) )
 	{
-		shadex -= 8;
-		shadei += 32;
+		if (damagecount < 5)
+			shadepixel = 1;
+		else if (damagecount < 9)
+			shadepixel = 2;
+		else if (damagecount < 13)
+			shadepixel = 3;
+		else if (damagecount < 17)
+			shadepixel = 4;
+		else if (damagecount < 21)
+			shadepixel = 5;
+		else
+			shadepixel = 6;
 	}
-
-	if (player->powers[pw_ironfeet] > 60
-	|| (player->powers[pw_ironfeet]&4) )
-		shadey += 7;
-
-	if (player->powers[pw_strength] 
-	&& (player->powers[pw_strength]< 64) )
-		shadex += (8 - (player->powers[pw_strength]>>3) );
-
-
-/* */
-/* bound and store shades */
-/* */
-	if (shadex > 7)
-		shadex = 7;
-	else if (shadex < -8)
-		shadex = -8;
-	if (shadey > 7)
-		shadey = 7;
-	else if (shadey < -8)
-		shadey = -8;
-	if (shadei > 127)
-		shadei = 127;
-	else if (shadei < -128)
-		shadei = -128;
-		
-	shadepixel = ((shadex<<12)&0xf000) + ((shadey<<8)&0xf00) + (shadei&0xff);
-
+	else if (bonuscount)
+		shadepixel = bonuscount + 8;
+	else if (player->powers[pw_invulnerability] > 60
+		|| (player->powers[pw_invulnerability] & 4))
+		shadepixel = 12;
+	else if (player->powers[pw_ironfeet] > 60
+		|| (player->powers[pw_ironfeet] & 4))
+		shadepixel = 13;
+	else if (player->powers[pw_strength]
+		&& (player->powers[pw_strength] < 64))
+		shadepixel = 9 - (player->powers[pw_strength] >> 3);
+	else
+		shadepixel = 0;
 
 /* */
 /* plane filling */
 /*	 */
-	lastvisplane = visplanes+1;		/* visplanes[0] is left empty */
-	lastwallcmd = viswalls;			/* no walls added yet */
-	lastvissubsector = vissubsectors;	/* no subsectors visible yet */
+	lastvisplane = (visplane_t*)0x2401329c;		/* visplanes[0] is left empty */
+	lastwallcmd = (viswall_t*)0x2400f980;			/* no walls added yet */
+	lastvissubsector = (subsector_t**)0x2400f580;	/* no subsectors visible yet */
 	
 /*	 */
 /* clear sprites */
@@ -421,7 +400,7 @@ void R_Update (void);
 ==============
 */
 
-int		phasetime[9] = {1,2,3,4,5,6,7,8,9};
+int		phasetime[9];
 
 extern	ref1_start;
 extern	ref2_start;
@@ -437,22 +416,12 @@ extern	boolean	debugscreenactive;
 
 void R_RenderPlayerView (void)
 {
-
-/* make sure its done now */
-#ifdef JAGUAR
-	while (!I_RefreshCompleted ())
-	;
-#endif
-
 /* */
 /* initial setup */
 /* */
-	if (debugscreenactive)
-		R_DebugScreen ();
+	FUN_02037058 ();
 
 	R_Setup ();
-
-#ifndef JAGUAR
 	R_BSP ();
 	R_WallPrep ();
 	R_SpritePrep ();
@@ -463,26 +432,5 @@ void R_RenderPlayerView (void)
 	R_DrawPlanes ();
 	R_Sprites ();
 	R_Update ();
-#else
-
-/* start the gpu running the refresh */
-	phasetime[1] = 0;	
-	phasetime[2] = 0;	
-	phasetime[3] = 0;	
-	phasetime[4] = 0;	
-	phasetime[5] = 0;	
-	phasetime[6] = 0;	
-	phasetime[7] = 0;	
-	phasetime[8] = 0;	
-	gpufinished = zero;
-	gpucodestart = (int)&ref1_start;
-
-#if 0
-	while (!I_RefreshCompleted () )
-	;		/* wait for refresh to latch all needed data before */
-			/* running the next tick */
-#endif
-
-#endif
 }
 
