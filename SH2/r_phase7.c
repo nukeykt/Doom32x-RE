@@ -35,7 +35,7 @@ void R_DrawPlanes(void)
     basexscale = -(finecosine[angle] / 64);
     baseyscale = finesine[angle] / 64;
 
-    for (p = visplanes; p < lastvisplane; p++)
+    for (p = visplanes + 1; p < lastvisplane; p++)
     {
         if (p->minx <= p->maxx)
         {
@@ -49,6 +49,7 @@ void R_DrawPlanes(void)
             R_PlaneLoop(p);
         }
     }
+    phasetime[7] = samplecount;
 }
 
 void R_PlaneLoop(visplane_t* p)
