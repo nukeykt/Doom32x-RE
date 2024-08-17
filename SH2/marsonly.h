@@ -118,4 +118,14 @@ static inline void R_DrawSpan (int ds_y, int ds_x1, int ds_x2, int light, fixed_
 		R_DrawSpanASM(&info);
 }
 
+typedef struct
+{
+	pixel_t *data;
+	int width;
+	int height;
+	int topheight;
+	int bottomheight;
+	int texturemid;
+} drawtex_t;
+
 #endif
