@@ -1,5 +1,6 @@
 #include "doomdef.h"
 #include "p_local.h"
+#include "marsonly.h"
 
 int	playertics, thinkertics, sighttics, basetics, latetics;
 int	tictics;
@@ -196,7 +197,6 @@ void	P_RunMobjLate (void)
 void P_CheckCheats (void)
 {
 	int		buttons, oldbuttons;
-	int 	warpmap;
 	int		i;
 	player_t	*p;
 	
@@ -210,19 +210,13 @@ void P_CheckCheats (void)
 		if ( (buttons & BT_PAUSE) && !(oldbuttons&BT_PAUSE) )
 			gamepaused ^= 1;
 	}
-	
-	if (netgame)
-		return;
 		
 	buttons = ticbuttons[0];
 	oldbuttons = oldticbuttons[0];
 
-	if ( (oldbuttons&JP_PAUSE) || !(buttons & JP_PAUSE ) )
-		return;
-
-		
-	if (buttons&JP_NUM)
+	if (buttons == 0x400 && oldbuttons != 0x4000)
 	{	/* free stuff */
+		cheated = true;
 		p=&players[0];
 		for (i=0 ; i<NUMCARDS ; i++)
 			p->cards[i] = true;			
@@ -231,28 +225,10 @@ void P_CheckCheats (void)
 		for (i=0;i<NUMWEAPONS;i++) p->weaponowned[i] = true;
 		for (i=0;i<NUMAMMO;i++) p->ammo[i] = p->maxammo[i] = 500;
 	}
-
-	if (buttons&JP_STAR)
+	if (buttons == 0x200 && oldbuttons != 0x200)
 	{	/* godmode */
+		cheated = true;
 		players[0].cheats ^= CF_GODMODE;
-	}
-	warpmap = 0;
-	if (buttons&JP_1) warpmap = 1;
-	if (buttons&JP_2) warpmap = 2;
-	if (buttons&JP_3) warpmap = 3;
-	if (buttons&JP_4) warpmap = 4;
-	if (buttons&JP_5) warpmap = 5;
-	if (buttons&JP_6) warpmap = 6;
-	if (buttons&JP_7) warpmap = 7;
-	if (buttons&JP_8) warpmap = 8;
-	if (buttons&JP_9) warpmap = 9;
-	if (buttons&JP_A) warpmap += 10;
-	else if (buttons&JP_B) warpmap += 20;
-	
-	if (warpmap>0 && warpmap < 27)
-	{
-		gamemap = warpmap;
-		gameaction = ga_warped;
 	}
 }
   
@@ -276,17 +252,10 @@ int P_Ticker (void)
 	int		start;
 	int		ticstart;
 	player_t	*pl;
+
+	ticphase = 0;
 	
 	ticstart = samplecount;
-	
-	while (!I_RefreshLatched () )
-	;		/* wait for refresh to latch all needed data before */
-			/* running the next tick */
-
-#ifdef JAGAUR
-	while (DSPRead (&dspfinished) != 0xdef6)
-	;		/* wait for sound mixing to complete */
-#endif
 
 	gameaction = ga_nothing;
 	
@@ -296,18 +265,6 @@ int P_Ticker (void)
 /* check for pause and cheats */
 /* */
 	P_CheckCheats ();
-	
-/* */
-/* do option screen processing */
-/* */
-
-	for (playernum=0,pl=players ; playernum<MAXPLAYERS ; playernum++,pl++)
-		if (playeringame[playernum])
-			O_Control (pl);
-
-
-	if (gamepaused)
-		return 0;
 
 /* */
 /* run player actions */
@@ -318,33 +275,51 @@ int P_Ticker (void)
 		{
 			if (pl->playerstate == PST_REBORN) 
 				G_DoReborn (playernum); 
+			ticphase = 11;
 			AM_Control (pl);
+			ticphase = 12;
 			P_PlayerThink (pl);
+			ticphase = 13;
 		}
 	playertics = samplecount - start;
 	
+	ticphase = 1;
 	
 	start = samplecount;
 	P_RunThinkers ();
 	thinkertics = samplecount - start;
+
+	ticphase = 2;
 		
 	start = samplecount;
 	P_CheckSights ();	
 	sighttics = samplecount - start;
 
+	ticphase = 3;
+
 	start = samplecount;
 	P_RunMobjBase ();
 	basetics = samplecount - start;
+
+	ticphase = 4;
 
 	start = samplecount;
 	P_RunMobjLate ();
 	latetics = samplecount - start;
 
+	ticphase = 5;
+
 	P_UpdateSpecials ();
 
 	P_RespawnSpecials ();
+
+	ticphase = 6;
 	
 	ST_Ticker ();			/* update status bar */
+
+	AM_Ticker ();
+
+	ticphase = 7;
 		
 	tictics = samplecount - ticstart;
 	
@@ -361,77 +336,8 @@ int P_Ticker (void)
 ============= 
 */ 
  
-void DrawPlaque (jagobj_t *pl)
+void FUN_02038b0c (void)
 {
-#ifdef JAGUAR
-	int			x,y,w;
-	short		*sdest;
-	byte		*bdest, *source;
-	extern		int isrvmode;
-	
-	while ( !I_RefreshCompleted () )
-	;
-
-	bufferpage = (byte *)screens[!workpage];
-	source = pl->data;
-	
-	if (isrvmode == 0xc1 + (3<<9) )
-	{	/* 320 mode, stretch pixels */
-		bdest = (byte *)bufferpage + 80*320 + (160 - pl->width);
-		w = pl->width;
-		for (y=0 ; y<pl->height ; y++)
-		{
-			for (x=0 ; x<w ; x++)
-			{
-				bdest[x*2] = bdest[x*2+1] = *source++;
-			}
-			bdest += 320;
-		}
-	}
-	else
-	{	/* 160 mode, draw directly */
-		sdest = (short *)bufferpage + 80*160 + (80 - pl->width/2);
-		w = pl->width;
-		for (y=0 ; y<pl->height ; y++)
-		{
-			for (x=0 ; x<w ; x++)
-			{
-				sdest[x] = palette8[*source++];
-			}
-			sdest += 160;
-		}
-	}
-	
-#endif
-}
-
-/* 
-============= 
-= 
-= DrawPlaque 
-= 
-============= 
-*/ 
- 
-void DrawSinglePlaque (jagobj_t *pl)
-{
-	int			x,y,w;
-	byte		*bdest, *source;
-	
-	while ( !I_RefreshCompleted () )
-	;
-
-	bufferpage = (byte *)screens[!workpage];
-	source = pl->data;
-	
-	bdest = (byte *)bufferpage + 80*320 + (160 - pl->width/2);
-	w = pl->width;
-	for (y=0 ; y<pl->height ; y++)
-	{
-		for (x=0 ; x<w ; x++)
-			bdest[x] = *source++;
-		bdest += 320;
-	}
 }
 
 
@@ -447,51 +353,19 @@ void DrawSinglePlaque (jagobj_t *pl)
  
 void P_Drawer (void) 
 { 	
-	static boolean	refreshdrawn;
-#ifndef MARS
-	if (players[consoleplayer].automapflags & AF_OPTIONSACTIVE)
-	{
-		O_Drawer ();
-		refreshdrawn = false;
-	}
-	else if (gamepaused && refreshdrawn)
-		DrawPlaque (pausepic);
-	else if (players[consoleplayer].automapflags & AF_ACTIVE)
-	{
-		ST_Drawer ();
+	ST_Drawer ();
+	R_RenderPlayerView ();
+	if (players[consoleplayer].automapflags & AF_ACTIVE)
 		AM_Drawer ();
-		I_Update ();
-		refreshdrawn = true;
-	}
-	else
-#endif
-	{
-#ifdef JAGUAR
-		ST_Drawer ();
-#endif
-		R_RenderPlayerView (); 
-		refreshdrawn = true;
-	/* assume part of the refresh is now running parallel with main code */
-	}
+
+	I_Update ();
 } 
- 
- 
-extern	 int		ticremainder[2];
 
 void P_Start (void)
 {
-#ifndef MARS
-	AM_Start ();
-	S_RestartSounds ();
-#endif
-	players[0].automapflags = 0;
-	players[1].automapflags = 0;
-	ticremainder[0] = ticremainder[1] = 0;
-	M_ClearRandom ();
 }
 
 void P_Stop (void)
 {
-	Z_FreeTags (mainzone);
 }
 

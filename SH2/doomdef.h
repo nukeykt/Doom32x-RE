@@ -684,6 +684,7 @@ void F_Drawer (void);
 void AM_Control (player_t *player);
 void AM_Drawer (void);
 void AM_Start (void);
+void AM_Ticker (void);
 
 /*----- */
 /*OPTIONS */
