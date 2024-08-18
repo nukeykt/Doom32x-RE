@@ -51,7 +51,7 @@ void G_DoLoadLevel (void)
 	{ 
 		if (playeringame[i] && players[i].playerstate == PST_DEAD) 
 			players[i].playerstate = PST_REBORN; 
-		D_memset(&players[i].frags, 0, 8);
+		D_memset(players[i].frags, 0, sizeof(players[i].frags));
 	} 
 
 /*  */

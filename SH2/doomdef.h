@@ -360,8 +360,7 @@ typedef struct player_s
 	int			powers[NUMPOWERS];		/* invinc and invis are tic counters	 */
 	boolean		cards[NUMCARDS];
 	boolean		backpack;
-	int			frags;					/* kills of other player */
-	int			fragpad;	/* don't mess up offsets for asm code... */
+	int			frags[2];					/* kills of other player */
 	weapontype_t	readyweapon;
 	weapontype_t	pendingweapon;		/* wp_nochange if not changing */
 	boolean		weaponowned[NUMWEAPONS];

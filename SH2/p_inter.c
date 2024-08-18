@@ -139,8 +139,7 @@ boolean P_GiveWeapon (player_t *player, weapontype_t weapon, boolean dropped)
 		gaveweapon = true;
 		player->weaponowned[weapon] = true;
 		player->pendingweapon = weapon;
-		if (player == &players[consoleplayer])
-			stbar.specialFace = f_gotgat;
+		stbar.specialFace = f_gotgat;
 	}
 	
 	return gaveweapon || gaveammo;
@@ -569,24 +568,12 @@ void P_KillMobj (mobj_t *source, mobj_t *target)
 	target->flags |= MF_CORPSE|MF_DROPOFF;
 	target->height >>= 2;
 	
-	if (target->player)
-	{	/* a frag of one sort or another */
-		if (!source || !source->player || source->player == target->player)
-		{	/* killed self somehow */
-			target->player->frags--;
-			if (target->player->frags < 0)
-				target->player->frags = 0;
-		}
-		else 
-		{	/* killed by other player */
-			source->player->frags++;
-		}
-		
-		/* else just killed by a monster */
-	}
-	else if (source && source->player && (target->flags & MF_COUNTKILL) )
+	if (source && source->player )
 	{	/* a deliberate kill by a player */
-		source->player->killcount++;		/* count for intermission */
+		if (target->flags & MF_COUNTKILL)
+			source->player->killcount++;		/* count for intermission */
+		if (target->player)
+			source->player->frags[target->player-players]++;
 	}
 	else if (!netgame && (target->flags & MF_COUNTKILL) )
 		players[0].killcount++;			/* count all monster deaths, even */
@@ -599,8 +586,7 @@ void P_KillMobj (mobj_t *source, mobj_t *target)
 		P_DropWeapon (target->player);
 		if (target->health < -50)
 		{
-			if (target->player == &players[consoleplayer])
-				stbar.gotgibbed = true;
+			stbar.gotgibbed = true;
 			S_StartSound (target, sfx_slop);
 		}
 		else
