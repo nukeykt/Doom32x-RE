@@ -507,6 +507,9 @@ void P_DeathThink (player_t *player)
 */
 
 extern int ticphase;
+extern int DAT_06000ce8;
+extern int DAT_060010c8;
+extern int DAT_060010cc;
 
 void P_PlayerThink (player_t *player)
 {
@@ -556,28 +559,98 @@ ticphase = 22;
 ticphase = 23;
 	if (player->pendingweapon == wp_nochange)
 	{
-		if ( buttons & JP_1 )
+		if (buttons & 0x8000)
 		{
-			if (player->weaponowned[wp_chainsaw] &&
-			!(player->readyweapon == wp_chainsaw && player->powers[pw_strength]))
-				player->pendingweapon = wp_chainsaw;
-			else
-				player->pendingweapon = wp_fist;
+			if ( (buttons & 0xf00) == 0x100 )
+			{
+				if (player->weaponowned[wp_chainsaw] &&
+				!(player->readyweapon == wp_chainsaw && player->powers[pw_strength]))
+					player->pendingweapon = wp_chainsaw;
+				else
+					player->pendingweapon = wp_fist;
+			}
+			if  ((buttons & 0xf00) == 0x500 )
+				player->pendingweapon = wp_pistol;
+			if ( (buttons & 0xf00) == 0x600 && player->weaponowned[wp_shotgun] )
+				player->pendingweapon = wp_shotgun;
+			if ( (buttons & 0xf00) == 0x700 && player->weaponowned[wp_chaingun] )
+				player->pendingweapon = wp_chaingun;
+			if ( (buttons & 0xf00) == 0x200 && player->weaponowned[wp_missile] )
+				player->pendingweapon = wp_missile;
+			if ( (buttons & 0xf00) == 0x300 && player->weaponowned[wp_plasma] )
+				player->pendingweapon = wp_plasma;
+			if ( (buttons & 0xf00) == 0x400 && player->weaponowned[wp_bfg] )
+				player->pendingweapon = wp_bfg;
+			if (player->pendingweapon == player->readyweapon)
+				player->pendingweapon = wp_nochange;
 		}
-		if ( buttons & JP_2 )
-			player->pendingweapon = wp_pistol;
-		if ( (buttons & JP_3) && player->weaponowned[wp_shotgun] )
-			player->pendingweapon = wp_shotgun;
-		if ( (buttons & JP_4) && player->weaponowned[wp_chaingun] )
-			player->pendingweapon = wp_chaingun;
-		if ( (buttons & JP_5) && player->weaponowned[wp_missile] )
-			player->pendingweapon = wp_missile;
-		if ( (buttons & JP_6) && player->weaponowned[wp_plasma] )
-			player->pendingweapon = wp_plasma;
-		if ( (buttons & JP_7) && player->weaponowned[wp_bfg] )
-			player->pendingweapon = wp_bfg;
-		if (player->pendingweapon == player->readyweapon)
-			player->pendingweapon = wp_nochange;
+		else
+		{
+			if (DAT_06000ce8 != player->readyweapon)
+				DAT_06000ce8 = player->readyweapon;
+			if (buttons & DAT_060010c8)
+			{
+				do
+				{
+					if (DAT_06000ce8 == wp_chainsaw)
+						DAT_06000ce8 = wp_fist;
+
+					DAT_06000ce8++;
+					if (DAT_06000ce8 == 8)
+					{
+						DAT_06000ce8 = wp_pistol;
+						if (player->ammo[weaponinfo[wp_pistol].ammo])
+							break;
+					}
+					else if (DAT_06000ce8 == 7)
+					{
+						if (player->weaponowned[wp_chainsaw] &&
+							!(player->readyweapon == wp_chainsaw && player->powers[pw_strength]))
+							player->pendingweapon = wp_chainsaw;
+						else
+						{
+							player->pendingweapon = wp_fist;
+							DAT_06000ce8 = wp_fist;
+						}
+						break;
+					}
+					if (player->weaponowned[DAT_06000ce8])
+					{
+						player->pendingweapon = DAT_06000ce8;
+						if (player->ammo[weaponinfo[DAT_06000ce8].ammo])
+							break;
+					}
+				} while (1);
+			}
+			else if (buttons & DAT_060010cc)
+			{
+				do
+				{
+					if (DAT_06000ce8 == wp_fist)
+						DAT_06000ce8 = wp_chainsaw;
+
+					DAT_06000ce8--;
+					if (DAT_06000ce8 == wp_fist)
+					{
+						if (player->weaponowned[wp_chainsaw] &&
+							!(player->readyweapon == wp_chainsaw && player->powers[pw_strength]))
+							player->pendingweapon = wp_chainsaw;
+						else
+						{
+							player->pendingweapon = wp_fist;
+							DAT_06000ce8 = wp_fist;
+						}
+						break;
+					}
+					if (player->weaponowned[DAT_06000ce8])
+					{
+						player->pendingweapon = DAT_06000ce8;
+						if (player->ammo[weaponinfo[DAT_06000ce8].ammo])
+							break;
+					}
+				} while (1);
+			}
+		}
 	}
 	
 /* */
