@@ -319,9 +319,9 @@ void P_SpawnMapThing (mapthing_t *mthing)
 /* count deathmatch start positions */
 	if (mthing->type == 11)
 	{
-		if (deathmatch_p < &deathmatchstarts[10])
+		/*if (deathmatch_p < &deathmatchstarts[10])
 			D_memcpy (deathmatch_p, mthing, sizeof(*mthing));
-		deathmatch_p++;
+		deathmatch_p++;*/
 		return;
 	}
 	
@@ -401,10 +401,10 @@ return;	/*DEBUG */
 	if (mthing->options & MTF_AMBUSH)
 		mobj->flags |= MF_AMBUSH;
 		
-	mobj->spawnx = mthing->x;
+/*	mobj->spawnx = mthing->x;
 	mobj->spawny = mthing->y;
 	mobj->spawntype = mthing->type;
-	mobj->spawnangle = mthing->angle;
+	mobj->spawnangle = mthing->angle;*/
 }
 
 

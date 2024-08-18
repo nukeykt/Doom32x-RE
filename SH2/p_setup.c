@@ -528,26 +528,6 @@ void P_GroupLines (void)
 /*
 =================
 =
-= P_LoadingPlaque
-=
-=================
-*/
-
-void P_LoadingPlaque (void)
-{
-	jagobj_t	*pl;
-
-	pl = W_CacheLumpName ("loading", PU_STATIC);	
-	DrawPlaque (pl);
-	Z_Free (pl);
-}	
-
-/*============================================================================= */
-
-
-/*
-=================
-=
 = P_SetupLevel
 =
 =================
@@ -559,11 +539,6 @@ void P_SetupLevel (int map, skill_t skill)
 	static char	lumpname[16];
 	int		lumpnum;
 	mobj_t	*mobj;
-	extern	int	cy;
-	
-	M_ClearRandom ();
-
-	P_LoadingPlaque ();
 	
 D_printf ("P_SetupLevel(%i,%i)\n",map,skill);
 	
@@ -617,40 +592,14 @@ Z_CheckHeap (refzone);
 	deathmatch_p = deathmatchstarts;
 	P_LoadThings (lumpnum+ML_THINGS);
 	
-/* */
-/* if deathmatch, randomly spawn the active players */
-/* */
-	if (netgame == gt_deathmatch)
-	{
-		for (i=0 ; i<MAXPLAYERS ; i++)
-			if (playeringame[i])
-			{	/* must give a player spot before deathmatchspawn */
-				mobj = P_SpawnMobj (deathmatchstarts[0].x<<16
-				,deathmatchstarts[0].y<<16,0, MT_PLAYER);
-				players[i].mo = mobj;
-				G_DeathMatchSpawnPlayer (i);
-				P_RemoveMobj (mobj);
-			}
-	}
-	
 /* set up world state */
 	P_SpawnSpecials ();
-	ST_InitEveryLevel ();
-	
-/*printf ("free memory: 0x%x\n", Z_FreeMemory(mainzone)); */
-
-	cy = 4;
-
-#ifdef JAGUAR
-{
-extern byte *debugscreen;
-	D_memset (debugscreen,0,32*224);
-	
-}
-#endif
 
 	iquehead = iquetail = 0;
 	gamepaused = false;
+
+	if (players[consoleplayer].automapflags & AF_ACTIVE)
+		AM_Stop ();
 }
 
 

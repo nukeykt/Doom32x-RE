@@ -497,7 +497,7 @@ void FUN_02036db4()
     FUN_02036fa8();
 }
 
-unsigned short* FUN_02036dc8()
+byte *I_TempBuffer()
 {
     int i;
     unsigned short *dst = (unsigned short*)0x24000200;
@@ -506,7 +506,7 @@ unsigned short* FUN_02036dc8()
         *dst++ = 0;
     }
 
-    return (unsigned short*)0x24000200;
+    return (byte*)0x24000200;
 }
 
 int I_GetTics(void)
