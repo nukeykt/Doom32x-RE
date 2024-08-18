@@ -129,6 +129,90 @@ void P_ChangeSwitchTexture(line_t *line,int useAgain)
 		}
 }
 
+
+void FUN_02041d78 ( mobj_t *thing, line_t *line)
+{
+	switch (line->special)
+	{
+		case 7:			/* Build Stairs */
+			if (EV_BuildStairs(line))
+				P_ChangeSwitchTexture(line,0);
+			break;
+		case 9:			/* Change Donut */
+			if (EV_DoDonut(line))
+				P_ChangeSwitchTexture(line,0);
+			break;
+		case 11:		/* Exit level */
+			G_ExitLevel ();
+			P_ChangeSwitchTexture(line,0);
+			break;
+		case 14:		/* Raise Floor 32 and change texture */
+			if (EV_DoPlat(line,raiseAndChange,32))
+				P_ChangeSwitchTexture(line,0);
+			break;
+		case 15:		/* Raise Floor 24 and change texture */
+			if (EV_DoPlat(line,raiseAndChange,24))
+				P_ChangeSwitchTexture(line,0);
+			break;
+		case 18:		/* Raise Floor to next highest floor */
+			if (EV_DoFloor(line, raiseFloorToNearest))
+				P_ChangeSwitchTexture(line,0);
+			break;
+		case 20:		/* Raise Plat next highest floor and change texture */
+			if (EV_DoPlat(line,raiseToNearestAndChange,0))
+				P_ChangeSwitchTexture(line,0);
+			break;
+		case 21:		/* PlatDownWaitUpStay */
+			if (EV_DoPlat(line,downWaitUpStay,0))
+				P_ChangeSwitchTexture(line,0);
+			break;
+		case 23:		/* Lower Floor to Lowest */
+			if (EV_DoFloor(line,lowerFloorToLowest))
+				P_ChangeSwitchTexture(line,0);
+			break;
+		case 29:		/* Raise Door */
+			if (EV_DoDoor(line,normal))
+				P_ChangeSwitchTexture(line,0);
+			break;
+		case 41:		/* Lower Ceiling to Floor */
+			if (EV_DoCeiling(line,lowerToFloor))
+				P_ChangeSwitchTexture(line,0);
+			break;
+		case 71:		/* Turbo Lower Floor */
+			if (EV_DoFloor(line,turboLower))
+				P_ChangeSwitchTexture(line,0);
+			break;
+		case 49:		/* Lower Ceiling And Crush */
+			if (EV_DoCeiling(line,lowerAndCrush))
+				P_ChangeSwitchTexture(line,0);
+			break;
+		case 50:		/* Close Door */
+			if (EV_DoDoor(line,close))
+				P_ChangeSwitchTexture(line,0);
+			break;
+		case 51:		/* Secret EXIT */
+			G_SecretExitLevel ();
+			P_ChangeSwitchTexture(line,0);
+			break;
+		case 55:		/* Raise Floor Crush */
+			if (EV_DoFloor(line,raiseFloorCrush))
+				P_ChangeSwitchTexture(line,0);
+			break;
+		case 101:		/* Raise Floor */
+			if (EV_DoFloor(line,raiseFloor))
+				P_ChangeSwitchTexture(line,0);
+			break;
+		case 102:		/* Lower Floor to Surrounding floor height */
+			if (EV_DoFloor(line,lowerFloor))
+				P_ChangeSwitchTexture(line,0);
+			break;
+		case 103:		/* Open Door */
+			if (EV_DoDoor(line,open))
+				P_ChangeSwitchTexture(line,0);
+			break;
+	}
+}
+
 /*
 ==============================================================================
 =
@@ -243,84 +327,8 @@ boolean P_UseSpecialLine ( mobj_t *thing, line_t *line)
 			if (EV_DoFloor(line,turboLower))
 				P_ChangeSwitchTexture(line,1);
 			break;
-		/*=============================================== */
-		/*	SWITCHES */
-		/*=============================================== */
-		case 7:			/* Build Stairs */
-			if (EV_BuildStairs(line))
-				P_ChangeSwitchTexture(line,0);
-			break;
-		case 9:			/* Change Donut */
-			if (EV_DoDonut(line))
-				P_ChangeSwitchTexture(line,0);
-			break;
-		case 11:		/* Exit level */
-			G_ExitLevel ();
-			P_ChangeSwitchTexture(line,0);
-			break;
-		case 14:		/* Raise Floor 32 and change texture */
-			if (EV_DoPlat(line,raiseAndChange,32))
-				P_ChangeSwitchTexture(line,0);
-			break;
-		case 15:		/* Raise Floor 24 and change texture */
-			if (EV_DoPlat(line,raiseAndChange,24))
-				P_ChangeSwitchTexture(line,0);
-			break;
-		case 18:		/* Raise Floor to next highest floor */
-			if (EV_DoFloor(line, raiseFloorToNearest))
-				P_ChangeSwitchTexture(line,0);
-			break;
-		case 20:		/* Raise Plat next highest floor and change texture */
-			if (EV_DoPlat(line,raiseToNearestAndChange,0))
-				P_ChangeSwitchTexture(line,0);
-			break;
-		case 21:		/* PlatDownWaitUpStay */
-			if (EV_DoPlat(line,downWaitUpStay,0))
-				P_ChangeSwitchTexture(line,0);
-			break;
-		case 23:		/* Lower Floor to Lowest */
-			if (EV_DoFloor(line,lowerFloorToLowest))
-				P_ChangeSwitchTexture(line,0);
-			break;
-		case 29:		/* Raise Door */
-			if (EV_DoDoor(line,normal))
-				P_ChangeSwitchTexture(line,0);
-			break;
-		case 41:		/* Lower Ceiling to Floor */
-			if (EV_DoCeiling(line,lowerToFloor))
-				P_ChangeSwitchTexture(line,0);
-			break;
-		case 71:		/* Turbo Lower Floor */
-			if (EV_DoFloor(line,turboLower))
-				P_ChangeSwitchTexture(line,0);
-			break;
-		case 49:		/* Lower Ceiling And Crush */
-			if (EV_DoCeiling(line,lowerAndCrush))
-				P_ChangeSwitchTexture(line,0);
-			break;
-		case 50:		/* Close Door */
-			if (EV_DoDoor(line,close))
-				P_ChangeSwitchTexture(line,0);
-			break;
-		case 51:		/* Secret EXIT */
-			G_SecretExitLevel ();
-			P_ChangeSwitchTexture(line,0);
-			break;
-		case 55:		/* Raise Floor Crush */
-			if (EV_DoFloor(line,raiseFloorCrush))
-				P_ChangeSwitchTexture(line,0);
-			break;
-		case 101:		/* Raise Floor */
-			if (EV_DoFloor(line,raiseFloor))
-				P_ChangeSwitchTexture(line,0);
-			break;
-		case 102:		/* Lower Floor to Surrounding floor height */
-			if (EV_DoFloor(line,lowerFloor))
-				P_ChangeSwitchTexture(line,0);
-			break;
-		case 103:		/* Open Door */
-			if (EV_DoDoor(line,open))
-				P_ChangeSwitchTexture(line,0);
+		default:
+			FUN_02041d78(thing, line);
 			break;
 	}
 	
