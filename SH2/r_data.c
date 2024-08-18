@@ -136,7 +136,6 @@ void strupr (char *s);
 
 int	R_FlatNumForName (char *name)
 {
-#if 0
 	int		i;
 	static char	namet[16];
 
@@ -152,41 +151,6 @@ int	R_FlatNumForName (char *name)
 	if (i>numflats)
 		I_Error ("R_FlatNumForName: %s past f_end",namet);
 	return i;
-#endif
-	int			i;
-	lumpinfo_t	*lump_p;
-	char	name8[12];
-	int		v1,v2;
-	int		c;
-	
-/* make the name into two integers for easy compares */
-	*(int *)&name8[0] = 0;
-	*(int *)&name8[4] = 0;
-	for (i=0 ; i<8 && name[i] ; i++)
-	{
-		c = name[i];
-		if (c >= 'a' && c <= 'z')
-			c -= 'a'-'A';
-		name8[i] = c;
-	}
-
-	v1 = *(int *)name8;
-	v2 = *(int *)&name8[4];
-
-#ifndef MARS
-	v1 |= HIBIT;
-#endif
-
-	lump_p = &lumpinfo[firstflat];
-	for (i=0 ; i<numflats; i++, lump_p++)
-	{
-		if (*(int *)&lump_p->name[4] == v2
-		&&  (*(int *)lump_p->name) == v1)
-			return i;
-	}
-
-	I_Error ("R_FlatNumForName: %s not found",name);
-	return -1;
 }
 
 
@@ -202,31 +166,20 @@ int	R_CheckTextureNumForName (char *name)
 {
 	int		i,c;
 	char	temp[8];
-	int		v1, v2;
-	texture_t	*texture_p;
 		
 	if (name[0] == '-')		/* no texture marker */
 		return 0;
 	
-	*(int *)&temp[0] = 0;
-	*(int *)&temp[4] = 0;
-	
-	for (i=0 ; i<8 && name[i] ; i++)
+	for (i=0 ; i<8 ; i++)
 	{
 		c = name[i];
 		if (c >= 'a' && c<='z')
 			c -= ('a'-'A');
 		temp[i] = c;
 	}
-
-	v1 = *(int *)temp;
-	v2 = *(int *)&temp[4];
-		
-	texture_p = textures;
 	
-	for (i=0 ; i<numtextures ; i++,texture_p++)
-		if (*(int *)&texture_p->name[4] == v2
-		&&  (*(int *)texture_p->name) == v1)
+	for (i=0 ; i<numtextures ; i++)
+		if (!D_strncasecmp(textures[i].name, temp, 8))
 			return i;
 		
 	return 0;	/* FIXME -1; */
