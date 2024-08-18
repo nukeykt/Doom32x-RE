@@ -1,27 +1,6 @@
 #include "doomdef.h" 
  
 /* 
- *  Information about all the music 
- */ 
- 
-musicinfo_t S_music[] = 
-{ 
-  { 0 }, 
-  { "m_e1m1", 0 },
-  { "m_e1m2", 0 },
-  { "m_e1m4", 0 },
-  { "m_e1m6", 0 },
-  { "m_e2m1", 0 },
-  { "m_e2m2", 0 },
-  { "m_e2m3", 0 },
-  { "m_e2m6", 0 },
-  { "m_e2m8", 0 },
-  { "m_e3m2", 0 },
-  { "m_intro", 0 }
-}; 
- 
- 
-/* 
  *  Information about all the sfx 
  */ 
  
@@ -90,7 +69,6 @@ sfxinfo_t S_sfx[] =
   { "barexp", false, 60, 0, -1, -1, 0 }, 
   { "punch", false, 64, 0, -1, -1, 0 }, 
   { "hoof", false, 120, 0, -1, -1, 0 }, 
-  { "metal", false, 120, 0, -1, -1, 0 },
-  { "itmbk", false, 120, 0, -1, -1, 0 }  
+  { "metal", false, 120, 0, -1, -1, 0 }
 }; 
  

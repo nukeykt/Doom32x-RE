@@ -33,14 +33,14 @@ typedef struct
 
 #define	INTERNALQUADS	256			/* 4k / 16 bytes per quad (64 bits) */
 #define	EXTERNALQUADS	512			/* 16k  / 32 bytes per quad (16 bits+music) */
-#define	SFXCHANNELS		4
+#define	SFXCHANNELS		2
 
 typedef struct
 {
 	unsigned	*source;			/* work in groups of 4 8 bit samples */
+	int			priority;
 	int			startquad;
-	int			stopquad;
-	int			volume;				/* range from 0-32k */
+	int			id;				/* range from 0-32k */
 	sfxinfo_t	*sfx;
 	mobj_t		*origin;
 } sfxchannel_t;
