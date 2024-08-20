@@ -142,11 +142,9 @@ void R_WallPrep(void)
                     segl->bottomsil = (byte*)lastopening - rw_x;
                     lastopening += width;
                 }
-                if (skyhack)
-                {
-                }
-                else if ((b_ceilingheight <= 0 && b_ceilingheight < f_ceilingheight) ||
-                    (f_ceilingheight > 0 && b_ceilingheight > f_ceilingheight))
+                if (!skyhack
+                    && ((b_ceilingheight <= 0 && b_ceilingheight < f_ceilingheight) ||
+                    (f_ceilingheight > 0 && b_ceilingheight > f_ceilingheight)))
                 {
                     actionbits |= AC_TOPSIL;
                     segl->topsil = (byte*)lastopening - rw_x;

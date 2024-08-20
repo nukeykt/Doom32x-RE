@@ -73,9 +73,9 @@ void AM_getIslope(mline_t *ml, islope_t *is)
   dy = ml->a.y - ml->b.y;
   dx = ml->b.x - ml->a.x;
   if (!dy) is->islp = (dx<0?-MAXINT:MAXINT);
-  else is->islp = FixedDiv(dx, dy);
+  else is->islp = FixedDiv2(dx, dy);
   if (!dx) is->slp = (dy<0?-MAXINT:MAXINT);
-  else is->slp = FixedDiv(dy, dx);
+  else is->slp = FixedDiv2(dy, dx);
 }
 
 void AM_activateNewScale(void)
@@ -115,8 +115,8 @@ void AM_restoreScaleAndLoc(void)
   m_y2 = m_y + m_h;
 
   /* Change the scaling multipliers */
-  scale_mtof = FixedDiv(f_w<<FRACBITS, m_w);
-  scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+  scale_mtof = FixedDiv2(f_w<<FRACBITS, m_w);
+  scale_ftom = FixedDiv2(FRACUNIT, scale_mtof);
 }
 
 /* adds a marker at the current location */
@@ -148,11 +148,11 @@ void AM_findMinMaxBoundaries(void)
   min_w = 2*PLAYERRADIUS;
   min_h = 2*PLAYERRADIUS;
 
-  a = FixedDiv(f_w<<FRACBITS, max_w);
-  b = FixedDiv(f_h<<FRACBITS, max_h);
+  a = FixedDiv2(f_w<<FRACBITS, max_w);
+  b = FixedDiv2(f_h<<FRACBITS, max_h);
   min_scale_mtof = a < b ? a : b;
 
-  max_scale_mtof = FixedDiv(f_h<<FRACBITS, 2*PLAYERRADIUS);
+  max_scale_mtof = FixedDiv2(f_h<<FRACBITS, 2*PLAYERRADIUS);
 
 }
 
@@ -257,9 +257,9 @@ void AM_LevelInit(void)
   AM_clearMarks();
 
   AM_findMinMaxBoundaries();
-  scale_mtof = FixedDiv(min_scale_mtof, (int) (0.7*FRACUNIT));
+  scale_mtof = FixedDiv2(min_scale_mtof, (int) (0.7*FRACUNIT));
   if (scale_mtof > max_scale_mtof) scale_mtof = min_scale_mtof;
-  scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+  scale_ftom = FixedDiv2(FRACUNIT, scale_mtof);
 }
 
 static boolean stopped = true;
@@ -296,7 +296,7 @@ void AM_Start (void)
 void AM_minOutWindowScale(void)
 {
   scale_mtof = min_scale_mtof;
-  scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+  scale_ftom = FixedDiv2(FRACUNIT, scale_mtof);
   AM_activateNewScale();
 }
 
@@ -305,7 +305,7 @@ void AM_minOutWindowScale(void)
 void AM_maxOutWindowScale(void)
 {
   scale_mtof = max_scale_mtof;
-  scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+  scale_ftom = FixedDiv2(FRACUNIT, scale_mtof);
   AM_activateNewScale();
 }
 
@@ -428,7 +428,7 @@ void AM_changeWindowScale(void)
 
   /* Change the scaling multipliers */
   scale_mtof = FixedMul(scale_mtof, mtof_zoommul);
-  scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
+  scale_ftom = FixedDiv2(FRACUNIT, scale_mtof);
 
   if (scale_mtof < min_scale_mtof) AM_minOutWindowScale();
   else if (scale_mtof > max_scale_mtof) AM_maxOutWindowScale();

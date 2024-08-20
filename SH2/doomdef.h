@@ -464,6 +464,7 @@ extern	mapthing_t	playerstarts[MAXPLAYERS];
 
 fixed_t	FixedMul (fixed_t a, fixed_t b);
 fixed_t	FixedDiv (fixed_t a, fixed_t b);
+fixed_t	FixedDiv2 (fixed_t a, fixed_t b);
 
 #define	ACC_FIXEDMUL	4
 #define	ACC_FIXEDDIV	8
