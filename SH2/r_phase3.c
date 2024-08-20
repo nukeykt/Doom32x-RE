@@ -51,6 +51,7 @@ void R_PrepMobj(mobj_t *thing)
     int tz;
     int tx;
     int lump;
+    int flip;
     vissprite_t* vis;
     int xscale;
 
@@ -73,6 +74,7 @@ void R_PrepMobj(mobj_t *thing)
         return;
 
     lump = spritelump[thing->sprite] + ((thing->frame & FF_FRAMEMASK) << 1);
+    flip = 0;
 
     vis = vissprite_p;
 
@@ -90,7 +92,10 @@ void R_PrepMobj(mobj_t *thing)
     vis->xscale = xscale;
     vis->yscale = R_FixedMul(xscale, (7*FRACUNIT)/3);
     vis->yiscale = 0xffffffffUL / (unsigned int)vis->yscale;
-    vis->xiscale = 0xffffffffUL / xscale;
+    if (flip)
+        vis->xiscale = -(0xffffffffUL / xscale);
+    else
+        vis->xiscale = 0xffffffffUL / xscale;
     if (thing->frame & FF_FULLBRIGHT)
         vis->colormap = 255;
     else
