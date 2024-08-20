@@ -248,7 +248,7 @@ void R_FinishWallPrep(viswall_t *wc)
     if (wc->stop > wc->start)
     {
         scale2 = R_ScaleFromGlobalAngle(rw_distance, viewangle + xtoviewangle[wc->stop]);
-        wc->scalestep = abs((scale2 - scalefrac) / (wc->stop - wc->start));
+        wc->scalestep = (scale2 - scalefrac) / (wc->stop - wc->start);
     }
 
     wc->scale2 = scale2;
