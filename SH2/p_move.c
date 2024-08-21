@@ -259,7 +259,7 @@ int PM_PointOnSide(fixed_t x, fixed_t y, node_t *node)
     fixed_t right;
 
     dx = x - node->x;
-    dy = x - node->y;
+    dy = y - node->y;
 
     left = (node->dy>>FRACBITS)*dx;
     right = dy*(node->dx>>FRACBITS);
