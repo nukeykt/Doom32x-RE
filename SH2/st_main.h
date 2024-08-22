@@ -13,9 +13,9 @@
 #define HEALTHY		AMMOY
 
 #define KEYX		124
-#define REDKEYY		3
-#define BLUKEYY		15
-#define YELKEYY		27
+#define REDKEYY		4
+#define BLUKEYY		16
+#define YELKEYY		28
 #define KEYW		16
 #define KEYH		11
 
@@ -57,8 +57,8 @@ typedef enum
 	sbf_gotgat,
 	sbf_mowdown
 } faces_e;
-#define	GODFACE		40
-#define DEADFACE 	41
+#define	GODFACE		16
+#define DEADFACE 	15
 #define FIRSTSPLAT	42
 #define GIBTIME		4
 #define NUMSPLATS	6
