@@ -80,35 +80,7 @@ void PrintNumber (int x, int y, int num)
 	static char	str[16];
 	
 	NumToStr (num,str);
-	I_Print8 (x,y,str);
-}
-
-
-/*
-=============
-=
-= PrintHex
-=
-=============
-*/
-
-char *hexdig = "0123456789ABCDEF";
-
-void PrintHex (int x, int y, unsigned num)
-{
-	char	str[9];
-	
-	str[0] = hexdig[(num>>28)&15];
-	str[1] = hexdig[(num>>24)&15];
-	str[2] = hexdig[(num>>20)&15];
-	str[3] = hexdig[(num>>16)&15];
-	str[4] = hexdig[(num>>12)&15];
-	str[5] = hexdig[(num>>8)&15];
-	str[6] = hexdig[(num>>4)&15];
-	str[7] = hexdig[(num)&15];
-	str[8] = 0;
-	
-	I_Print8 (x,y, str);
+	/*I_Print8 (x,y,str);*/
 }
 
 /*============================================================================= */
@@ -127,8 +99,25 @@ void D_printf (char *str, ...)
 	static char	buf[256];
 
 	D_vsprintf (buf,str,((int *)&str)+1);
-	I_Print8 (1,cy, buf);
-	cy ++;
+	/*I_Print8(1, cy, buf);
+	cy ++;*/
+}
+
+void Print8(int x, int y, char *s);
+void _clear(void);
+
+void D_printf2 (char *str, ...)
+{
+	static char	buf[256];
+
+	D_vsprintf (buf,str,((int *)&str)+1);
+	Print8(1, cy, buf);
+	cy++;
+	if (cy > 25)
+	{
+		_clear();
+		cy = 1;
+	}
 }
 
 
