@@ -111,12 +111,7 @@ void PM_UnsetThingPosition(mobj_t *thing)
 	    {
             blockx = (thing->x - bmaporgx)>>MAPBLOCKSHIFT;
             blocky = (thing->y - bmaporgy)>>MAPBLOCKSHIFT;
-
-            if (blockx>=0 && blockx < bmapwidth
-                && blocky>=0 && blocky <bmapheight)
-            {
-                blocklinks[blocky*bmapwidth+blockx] = thing->bnext;
-            }
+            blocklinks[blocky*bmapwidth+blockx] = thing->bnext;
 	    }
     }
 }
