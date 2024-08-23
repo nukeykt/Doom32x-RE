@@ -63,6 +63,8 @@ void Z_Init (void)
 	int		size;
 
 	mem = I_ZoneBase (&size);
+
+	D_memset(mem, 0, size);
 	
 #ifdef MARS
 /* mars doesn't have a refzone */
