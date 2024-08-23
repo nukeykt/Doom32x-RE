@@ -5,6 +5,8 @@
 
 extern int mystrlen (char *string);
 
+extern byte *framebuffer_p;
+
 /*
 ==================
 =
@@ -16,35 +18,23 @@ extern int mystrlen (char *string);
 
 void BufferedDrawSprite (int sprite, int frame, int rotation)
 {
-#ifndef MARS
-	spritedef_t	*sprdef;
-	spriteframe_t	*sprframe;
 	patch_t		*patch;
 	byte		*pixels, *src, *dest, pix;
 	int			count;
 	int			x, sprleft, sprtop;
 	column_t	*column;
 	int			lump;
-	boolean		flip;
 	int			texturecolumn;
 	
 	if ((unsigned)sprite >= NUMSPRITES)
 		I_Error ("BufferedDrawSprite: invalid sprite number %i "
 		,sprite);
-	sprdef = &sprites[sprite];
-	if ( (frame&FF_FRAMEMASK) >= sprdef->numframes )
-		I_Error ("BufferedDrawSprite: invalid sprite frame %i : %i "
-		,sprite,frame);
-	sprframe = &sprdef->spriteframes[ frame & FF_FRAMEMASK];
 
-	lump = sprframe->lump[rotation];
-	flip = (boolean)sprframe->flip[rotation];
+	lump = spritelump[sprite] * 2 + frame;
 
 	patch = (patch_t *)W_POINTLUMPNUM(lump);
 	pixels = Z_Malloc (lumpinfo[lump+1].size, PU_STATIC, NULL);
 	W_ReadLump (lump+1,pixels);
-
-	S_UpdateSounds ();
 	 	
 /* */
 /* coordinates are in a 160*112 screen (doubled pixels) */
@@ -60,10 +50,7 @@ void BufferedDrawSprite (int sprite, int frame, int rotation)
 /* */
 	for (x=0 ; x<patch->width ; x++)
 	{
-		if (flip)
-			texturecolumn = patch->width-1-x;
-		else
-			texturecolumn = x;
+		texturecolumn = x;
 			
 		column = (column_t *) ((byte *)patch +
 		 BIGSHORT(patch->columnofs[texturecolumn]));
@@ -74,7 +61,7 @@ void BufferedDrawSprite (int sprite, int frame, int rotation)
 		for ( ; column->topdelta != 0xff ; column++) 
 		{
 	/* calculate unclipped screen coordinates for post */
-			dest = bufferpage + (short)(sprtop+column->topdelta)*(short)640+(sprleft + x)*2;
+			dest = framebuffer_p + (short)(sprtop+column->topdelta)*(short)640+(sprleft + x)*2;
 			count = column->length;
 			src = pixels + column->dataofs;
 			while (count--)
@@ -89,11 +76,13 @@ void BufferedDrawSprite (int sprite, int frame, int rotation)
 	}
 	
 	Z_Free (pixels);	
-#endif
 }
 
 
 /*============================================================================ */
+
+int DAT_06000fbc = 0;
+int DAT_06000fc0 = 0;
 
 typedef struct
 {
@@ -102,14 +91,13 @@ typedef struct
 } castinfo_t;
 
 castinfo_t	castorder[] = {
-{"zombieman", MT_POSSESSED},
-{"shotgun guy", MT_SHOTGUY},
-{"imp", MT_TROOP},
-{"demon", MT_SERGEANT},
-{"lost soul", MT_SKULL},
-{"cacodemon", MT_HEAD},
-{"baron of hell", MT_BRUISER},
-{"our hero", MT_PLAYER},
+{"\"Zombieman\"", MT_POSSESSED},
+{"\"Shotgun Guy\"", MT_SHOTGUY},
+{"\"Imp\"", MT_TROOP},
+{"\"Demon\"", MT_SERGEANT},
+{"\"Lost Soul\"", MT_SKULL},
+{"\"Cacodemon\"", MT_HEAD},
+{"\"Baron of Hell\"", MT_BRUISER},
 
 {NULL,0}
 };
@@ -129,7 +117,7 @@ typedef enum
 } final_e;
 
 final_e	status;
-#define TEXTTIME	4
+#define TEXTTIME	3
 #define STARTX		8
 #define STARTY		8
 boolean textprint;	/* is endtext done printing? */
@@ -157,68 +145,52 @@ char	endtextstring[] =
 
 /* '*' = newline */
 char	endtextstring[] =
-	"     id software*"
-	"     salutes you!*"
+	"ID Software salutes you!*"
 	"*"
-	"  the horrors of hell*"
+	"The horrors of hell*"
 	"  could not kill you.*"
-	"  their most cunning*"
+	"  Their most cunning*"
 	"  traps were no match*"
-	"  for you. you have*"
+	"  for you.  You have*"
 	"  proven yourself the*"
 	"  best of all!*"
 	"*"
-	"  congratulations!";
+	"   Congratulations!*"
+	"8";
 
 /*=============================================== */
 /* */
 /* Print a string in big font - LOWERCASE INPUT ONLY! */
 /* */
 /*=============================================== */
-void F_PrintString(char *string)
+void F_PrintString(char *string, int v2)
 {
 	int		index;
 	int		val;
-	
+	int x;
+	int y;
+
+	x = 8;
+	y = 8;
+
 	index = 0;
-	while(1)
+	while (--v2 != -1)
 	{
-		switch(string[index])
+		if (string[index] == '*')
 		{
-			case 0: return;
-			case ' ':
-				text_x += SPACEWIDTH;
-				val = 30;
-				break;
-			case '.':
-				val = 26;
-				break;
-			case '!':
-				val = 27;
-				break;
-			case '*':
-				val = 30;
-				text_x = STARTX;
-				text_y += endobj[0]->height + 4;
-				break;
-			default:
-				val = string[index] - 'a';
-				break;
+			x = 8;
+			y++;
 		}
-		if (val < NUMENDOBJ)
+		else if (string[index] == '8')
 		{
-			DrawJagobj(endobj[val],text_x,text_y);
-			text_x += endobj[val]->width;
-			if (text_x > 316)
-			{
-				text_x = STARTX;
-				text_y += endobj[val]->height + 4;
-			}
+			DAT_06000fbc = 1;
+			return;
 		}
 		index++;
 	}
 }
 
+#if 0
 /*=============================================== */
 /* */
 /* Print character cast strings */
@@ -241,6 +213,7 @@ void F_CastPrint(char *string)
 	text_y = 20;
 	F_PrintString(string);
 }
+#endif
 
 /*
 =======================
@@ -250,22 +223,17 @@ void F_CastPrint(char *string)
 =======================
 */
 
+void _marsPri(void);
+void FUN_020373b2(void);
+
 void F_Start (void)
 {
-	int	i;
-	int	l;
-	
-	S_StartSong(2, 1);
-
 	status = fin_endtext;		/* END TEXT PRINTS FIRST */
 	textprint = false;
 	textindex = 0;
 	textdelay = TEXTTIME;
 	text_x = STARTX;
 	text_y = STARTY;
-	l = W_GetNumForName ("CHAR_097");
-	for (i = 0; i < NUMENDOBJ; i++)
-		endobj[i] = W_CacheLumpNum(l+i, PU_STATIC);
 
 	castnum = 0;
 	caststate = &states[mobjinfo[castorder[castnum].type].seestate];
@@ -275,17 +243,12 @@ void F_Start (void)
 	castonmelee = 0;
 	castattacking = false;
 
-	backgroundpic = W_POINTLUMPNUM(W_GetNumForName("M_TITLE"));
-
-	DoubleBufferSetup ();
+	_marsPri();
+	FUN_020373b2();
 }
 
 void F_Stop (void)
 {
-	int	i;
-	
-	for (i = 0;i < NUMENDOBJ; i++)
-		Z_Free(endobj[i]);
 }
 
 
@@ -298,6 +261,8 @@ void F_Stop (void)
 =
 =======================
 */
+
+void SND_Start(int a1, int a2, int a3);
 
 int F_Ticker (void)
 {
@@ -319,7 +284,7 @@ int F_Ticker (void)
 		if (( ((buttons & BT_A) && !(oldbuttons & BT_A) )
 		|| ((buttons & BT_B) && !(oldbuttons & BT_B) )
 		|| ((buttons & BT_C) && !(oldbuttons & BT_C) ) ) &&
-		textprint == true)
+		DAT_06000fbc == true)
 		{
 			status = fin_charcast;
 /*			S_StartSound (NULL, mobjinfo[castorder[castnum].type].seesound); */
@@ -355,8 +320,8 @@ int F_Ticker (void)
 		castdeath = false;
 		if (castorder[castnum].name == NULL)
 			castnum = 0;
-/*		if (mobjinfo[castorder[castnum].type].seesound) */
-/*			S_StartSound (NULL, mobjinfo[castorder[castnum].type].seesound); */
+		if (mobjinfo[castorder[castnum].type].seesound)
+			SND_Start (1, mobjinfo[castorder[castnum].type].seesound, 255);
 		caststate = &states[mobjinfo[castorder[castnum].type].seestate];
 		castframes = 0;
 	}
@@ -367,7 +332,6 @@ int F_Ticker (void)
 		st = caststate->nextstate;
 		caststate = &states[st];
 		castframes++;
-#if 0
 /*============================================== */
 /* sound hacks.... */
 {
@@ -375,39 +339,20 @@ int F_Ticker (void)
 	
 		switch (st)
 		{
-		case S_PLAY_ATK1: sfx = sfx_dshtgn; break;
+		case S_PLAY_ATK1: sfx = sfx_shotgn; break;
 		case S_POSS_ATK2: sfx = sfx_pistol; break;
 		case S_SPOS_ATK2: sfx = sfx_shotgn; break;
-		case S_VILE_ATK2: sfx = sfx_vilatk; break;
-		case S_SKEL_FIST2: sfx = sfx_skeswg; break;
-		case S_SKEL_FIST4: sfx = sfx_skepch; break;
-		case S_SKEL_MISS2: sfx = sfx_skeatk; break;
-		case S_FATT_ATK8:
-		case S_FATT_ATK5:
-		case S_FATT_ATK2: sfx = sfx_firsht; break;
-		case S_CPOS_ATK2:
-		case S_CPOS_ATK3:
-		case S_CPOS_ATK4: sfx = sfx_shotgn; break;
 		case S_TROO_ATK3: sfx = sfx_claw; break;
 		case S_SARG_ATK2: sfx = sfx_sgtatk; break;
 		case S_BOSS_ATK2: 
-		case S_BOS2_ATK2:
 		case S_HEAD_ATK2: sfx = sfx_firsht; break;
 		case S_SKULL_ATK2: sfx = sfx_sklatk; break;
-		case S_SPID_ATK2:
-		case S_SPID_ATK3: sfx = sfx_shotgn; break;
-		case S_BSPI_ATK2: sfx = sfx_plasma; break;
-		case S_CYBER_ATK2:
-		case S_CYBER_ATK4:
-		case S_CYBER_ATK6: sfx = sfx_rlaunc; break;
-		case S_PAIN_ATK3: sfx = sfx_sklatk; break;
 		default: sfx = 0; break;
 		}
 		
-/*		if (sfx) */
-/*			S_StartSound (NULL, sfx); */
+		if (sfx)
+			SND_Start (1, sfx, 255);
 }
-#endif
 /*============================================== */
 	}
 	
@@ -459,6 +404,13 @@ stopattack:
 =======================
 */
 
+void FUN_020376c4(void);
+
+void Prints(int a1, int a2, char* a3);
+
+void sleep(int a1);
+void _swapbuffers();
+
 void F_Drawer (void)
 {
 		
@@ -467,26 +419,26 @@ void F_Drawer (void)
 		case fin_endtext:
 			if (!--textdelay)
 			{
-				char	str[2];
-				
-				str[1] = 0;
-				str[0] = endtextstring[textindex];
-				if (!str[0])
-					return;
-				F_PrintString(str);
-				textdelay = TEXTTIME;
-				textindex++;
+				if (!DAT_06000fc0)
+					SND_Start(0, sfx_telept, 255);
 			}
+			F_PrintString(endtextstring, textindex);
+			textdelay = TEXTTIME;
+			textindex++;
+			DAT_06000fc0 = 1;
 			break;
 			
 		case fin_charcast:
-			EraseBlock (0,0,320,200);
-			F_CastPrint (castorder[castnum].name);
+			FUN_020376c4 ();
 				
 			BufferedDrawSprite (caststate->sprite,
 					caststate->frame&FF_FRAMEMASK,0);
+
+			Prints(19 - (mystrlen(castorder[castnum].name)>>1), 3, castorder[castnum].name);
 			break;
 	}
-	UpdateBuffer ();
+	sleep(1);
+	_swapbuffers();
+	sleep(1);
 }
 
