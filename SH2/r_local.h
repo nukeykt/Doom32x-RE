@@ -152,7 +152,7 @@ typedef struct
 
 #ifdef MARS
 
-int spritelump[NUMSPRITES];	/* no rotations, so just add frame num... */
+extern int spritelump[NUMSPRITES];	/* no rotations, so just add frame num... */
 
 #else
 

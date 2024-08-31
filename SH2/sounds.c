@@ -4,7 +4,7 @@
  *  Information about all the sfx 
  */ 
  
-sfxinfo_t S_sfx[] = 
+sfxinfo_t S_sfx[] __attribute__((section("const"))) =
 { 
   { 0 }, 
   { "pistol", false, 64, 0, -1, -1, 0 }, 
